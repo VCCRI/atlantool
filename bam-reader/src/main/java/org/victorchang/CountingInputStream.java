@@ -8,12 +8,6 @@ import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**
- * Input stream that tracks the number of bytes read.
- *
- * @NotThreadSafe
- * @since 1.3
- */
 public class CountingInputStream extends FilterInputStream {
     private long bytesRead;
     private long markPos;

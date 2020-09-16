@@ -1,54 +1,83 @@
 package org.victorchang;
 
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class BamRecordReaderTest {
-    private static final Logger log = LoggerFactory.getLogger(BamFileReaderTest.class);
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
+public class BamRecordReaderTest {
     @Test
     public void testReadSample1() throws IOException, URISyntaxException {
         URL example1 = ClassLoader.getSystemResource("bam/example1");
         Path path = Paths.get(example1.toURI());
 
-        BamRecordReader recordReader = new DefaultBamRecordReader(new DefaultGzipBlockAssembler(), new DefaultBamBlockReader());
+        BamRecordReader recordReader = new DefaultBamRecordReader(new DefaultBamRecordParser());
 
-        long start = System.nanoTime();
-        recordReader.read(path, 22720L, 1, new TestRecordHandler());
-        recordReader.read(path, 4531815L, 108, new TestRecordHandler());
-        long finish = System.nanoTime();
+        RecordFetcher handler = new RecordFetcher();
+        recordReader.read(path, 36300895, 59353, handler);
 
-        log.info(String.format("duration %d ms\n", (finish - start) / 1000_000));
+        assertThat(handler.getQname(), equalTo("SOLEXA-1GA-1_4_FC20ENL:7:76:613:540"));
+        assertThat(handler.getSeq(), equalTo("TTAAAAAAGGAAGGAATTAATTAATT="));
     }
 
-    private static class TestRecordHandler implements BamRecordHandler {
+    @Test
+    public void testReadSample2() throws IOException, URISyntaxException {
+        URL example1 = ClassLoader.getSystemResource("bam/example2");
+        Path path = Paths.get(example1.toURI());
+
+        BamRecordReader recordReader = new DefaultBamRecordReader(new DefaultBamRecordParser());
+
+        RecordFetcher handler = new RecordFetcher();
+        recordReader.read(path, 28645829, 12964, handler);
+
+        assertThat(handler.getQname(), equalTo("SOLEXA-1GA-1_6_FC20ET7:6:291:877:537"));
+        assertThat(handler.getSeq(), equalTo("GGTTAATTCCAAAATTGGTTGGGGGG="));
+    }
+
+    @Test
+    public void testReadSample3() throws IOException, URISyntaxException {
+        URL example1 = ClassLoader.getSystemResource("bam/example3");
+        Path path = Paths.get(example1.toURI());
+
+        BamRecordReader recordReader = new DefaultBamRecordReader(new DefaultBamRecordParser());
+
+        RecordFetcher handler = new RecordFetcher();
+        recordReader.read(path, 0, 64974, handler);
+
+        assertThat(handler.getQname(), equalTo("SOLEXA-1GA-1_6_FC20ET7:7:22:94:703"));
+        assertThat(handler.getSeq(), equalTo("GGCCTTTTAATTTTCCCCGGGGGGTT="));
+    }
+
+    private static class RecordFetcher implements BamRecordHandler {
+        private String qname;
+        private String seq;
+
         @Override
-        public void onRecord(ByteBuffer byteBuffer, int byteLen, int recordNum) {
+        public void onRecord(long blockPos, int offset) {
         }
 
         @Override
-        public void onQname(ByteBuffer byteBuffer, int byteLen) {
-            byte[] qname = new byte[byteLen];
-            byteBuffer.get(qname, 0, byteLen);
-            String decoded = Ascii7Decoder.INSTANCE.decode(qname, 0, qname.length);
-            log.debug(String.format("qname %s\n", decoded));
+        public void onQname(byte[] qname) {
+            this.qname = Ascii7Decoder.INSTANCE.decode(qname, 0, qname.length);
         }
 
         @Override
-        public void onSequence(ByteBuffer byteBuffer, int fieldLen) {
-            int byteLen = (fieldLen + 1) /2;
-            byte[] seq = new byte[byteLen];
-            byteBuffer.get(seq, 0, byteLen);
-            String decoded = SeqDecoder.INSTANCE.decode(seq, 0, fieldLen);
-            log.debug(String.format("seq %s\n", decoded));
+        public void onSequence(byte[] seq, int fieldLen) {
+            this.seq = SeqDecoder.INSTANCE.decode(seq, 0, fieldLen);
+        }
+
+        public String getQname() {
+            return qname;
+        }
+
+        public String getSeq() {
+            return seq;
         }
     }
 }

@@ -1,15 +1,12 @@
 package org.victorchang;
 
-import java.nio.ByteBuffer;
-
 /**
- * Callbacks that are invoked by {@link BamRecordReader}. Field data is available at the current position of the
- * {@link ByteBuffer}.
+ * Callbacks that are invoked by {@link BamFileReader}.
  */
 public interface BamRecordHandler {
-    void onRecord(ByteBuffer byteBuffer, int byteLen, int recordNum);
+    void onRecord(long blockPos, int offset);
 
-    void onQname(ByteBuffer byteBuffer, int byteLen);
+    void onQname(byte[] bytes);
 
-    void onSequence(ByteBuffer byteBuffer, int fieldLen);
+    void onSequence(byte[] bytes, int fieldLen);
 }

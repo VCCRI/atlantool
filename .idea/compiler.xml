@@ -7,6 +7,7 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="bam-reader" />
+        <module name="bam-index" />
       </profile>
     </annotationProcessing>
   </component>

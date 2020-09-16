@@ -23,44 +23,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-/**
- * Input stream that decompresses .gz files.
- *
- * <p>This supports decompressing concatenated .gz files which is important
- * when decompressing standalone .gz files.</p>
- *
- * <p>
- * {@link java.util.zip.GZIPInputStream} doesn't decompress concatenated .gz
- * files: it stops after the first member and silently ignores the rest.
- * It doesn't leave the read position to point to the beginning of the next
- * member, which makes it difficult workaround the lack of concatenation
- * support.
- * </p>
- *
- * <p>
- * Instead of using <code>GZIPInputStream</code>, this class has its own .gz
- * container format decoder. The actual decompression is done with
- * {@link Inflater}.
- * </p>
- *
- * <p>If you use the constructor {@code GzipCompressorInputStream(in)}
- * or {@code GzipCompressorInputStream(in, false)} with some {@code
- * InputStream} {@code in} then {@link #read} will return -1 as soon
- * as the first internal member has been read completely. The stream
- * {@code in} will be positioned at the start of the second gzip
- * member if there is one.</p>
- *
- * <p>If you use the constructor {@code GzipCompressorInputStream(in,
- * true)} with some {@code InputStream} {@code in} then {@link #read}
- * will return -1 once the stream {@code in} has been exhausted. The
- * data read from a stream constructed this way will consist of the
- * concatenated data of all gzip members contained inside {@code
- * in}.</p>
- *
- * @see "https://tools.ietf.org/html/rfc1952"
- */
-public class GzipCompressorInputStream extends CompressorInputStream
-        implements InputStreamStatistics {
+public class GzipCompressorInputStream extends CompressorInputStream implements InputStreamStatistics {
 
     // Header flags
     // private static final int FTEXT = 0x01; // Uninteresting for us
@@ -75,9 +38,6 @@ public class GzipCompressorInputStream extends CompressorInputStream
     // Compressed input stream, possibly wrapped in a
     // BufferedInputStream, always wrapped in countingStream above
     private final InputStream in;
-
-    // True if decompressing multi member streams.
-    private final boolean decompressConcatenated;
 
     // Buffer to hold the input data
     private final byte[] buf = new byte[8192];
@@ -99,70 +59,31 @@ public class GzipCompressorInputStream extends CompressorInputStream
 
     private final GzipParameters parameters = new GzipParameters();
 
-    /**
-     * Constructs a new input stream that decompresses gzip-compressed data
-     * from the specified input stream.
-     * <p>
-     * This is equivalent to
-     * <code>GzipCompressorInputStream(inputStream, false)</code> and thus
-     * will not decompress concatenated .gz files.
-     *
-     * @param inputStream the InputStream from which this object should
-     *                    be created of
-     * @throws IOException if the stream could not be created
-     */
-    public GzipCompressorInputStream(final InputStream inputStream)
-            throws IOException {
-        this(inputStream, false);
-    }
+    private final GzipEntryEventHandler eventHandler;
 
     /**
-     * Constructs a new input stream that decompresses gzip-compressed data
-     * from the specified input stream.
-     * <p>
-     * If <code>decompressConcatenated</code> is {@code false}:
-     * This decompressor might read more input than it will actually use.
-     * If <code>inputStream</code> supports <code>mark</code> and
-     * <code>reset</code>, then the input position will be adjusted
-     * so that it is right after the last byte of the compressed stream.
-     * If <code>mark</code> isn't supported, the input position will be
-     * undefined.
-     *
-     * @param inputStream            the InputStream from which this object should
-     *                               be created of
-     * @param decompressConcatenated if true, decompress until the end of the input;
-     *                               if false, stop after the first .gz member
-     * @throws IOException if the stream could not be created
+     * Constructs a new input stream that decompresses concatenated gzip-compressed data with event handler.
      */
     public GzipCompressorInputStream(final InputStream inputStream,
-                                     final boolean decompressConcatenated)
+                                     final GzipEntryEventHandler eventHandler)
             throws IOException {
-        countingStream = new CountingInputStream(inputStream);
-        // Mark support is strictly needed for concatenated files only,
-        // but it's simpler if it is always available.
-        if (countingStream.markSupported()) {
-            in = countingStream;
+        this.eventHandler = eventHandler;
+        if (inputStream.markSupported()) {
+            countingStream = new CountingInputStream(inputStream);
         } else {
-            in = new BufferedInputStream(countingStream);
+            countingStream =  new CountingInputStream(new BufferedInputStream(inputStream));
         }
+        in = countingStream;
 
-        this.decompressConcatenated = decompressConcatenated;
         init(true);
     }
 
-    /**
-     * Provides the stream's meta data - may change with each stream
-     * when decompressing concatenated streams.
-     *
-     * @return the stream's meta data
-     * @since 1.8
-     */
     public GzipParameters getMetaData() {
         return parameters;
     }
 
     private boolean init(final boolean isFirstMember) throws IOException {
-        assert isFirstMember || decompressConcatenated;
+        eventHandler.onStart(getCompressedCount(), getUncompressedCount());
 
         // Check the magic bytes without a possibility of EOFException.
         final int magic0 = in.read();
@@ -263,11 +184,6 @@ public class GzipCompressorInputStream extends CompressorInputStream
         return read(oneByte, 0, 1) == -1 ? -1 : oneByte[0] & 0xFF;
     }
 
-    /**
-     * {@inheritDoc}
-     *
-     * @since 1.1
-     */
     @Override
     public int read(final byte[] b, int off, int len) throws IOException {
         if (len == 0) {
@@ -337,7 +253,7 @@ public class GzipCompressorInputStream extends CompressorInputStream
                 }
 
                 // See if this is the end of the file.
-                if (!decompressConcatenated || !init(false)) {
+                if (!init(false)) {
                     inf.end();
                     inf = null;
                     endReached = true;
@@ -349,23 +265,6 @@ public class GzipCompressorInputStream extends CompressorInputStream
         return size;
     }
 
-    /**
-     * Checks if the signature matches what is expected for a .gz file.
-     *
-     * @param signature the bytes to check
-     * @param length    the number of bytes to check
-     * @return true if this is a .gz stream, false otherwise
-     * @since 1.1
-     */
-    public static boolean matches(final byte[] signature, final int length) {
-        return length >= 2 && signature[0] == 31 && signature[1] == -117;
-    }
-
-    /**
-     * Closes the input stream (unless it is System.in).
-     *
-     * @since 1.2
-     */
     @Override
     public void close() throws IOException {
         if (inf != null) {
@@ -378,9 +277,6 @@ public class GzipCompressorInputStream extends CompressorInputStream
         }
     }
 
-    /**
-     * @since 1.17
-     */
     @Override
     public long getCompressedCount() {
         return countingStream.getBytesRead();

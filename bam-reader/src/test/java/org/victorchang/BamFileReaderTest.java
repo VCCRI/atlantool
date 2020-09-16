@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -19,7 +18,7 @@ public class BamFileReaderTest {
         URL example1 = ClassLoader.getSystemResource("bam/example1");
         Path path = Paths.get(example1.toURI());
 
-        BamFileReader fileReader = new DefaultBamFileReader(new DefaultGzipBlockAssembler(), new DefaultBamBlockReader());
+        BamFileReader fileReader = new DefaultBamFileReader(new DefaultBamRecordParser());
 
         TestHandler handler = new TestHandler();
         long start = System.nanoTime();
@@ -30,56 +29,47 @@ public class BamFileReaderTest {
                 handler.getBlockCount(), handler.getRecordCount(),  (finish - start) / 1000_000));
     }
 
-    private static class TestHandler implements BamFileHandler {
+    @Test
+    public void testReadSample2() throws IOException, URISyntaxException {
+        URL example2 = ClassLoader.getSystemResource("bam/example2");
+        Path path = Paths.get(example2.toURI());
+
+        BamFileReader fileReader = new DefaultBamFileReader(new DefaultBamRecordParser());
+
+        TestHandler handler = new TestHandler();
+        long start = System.nanoTime();
+        fileReader.read(path, handler);
+        long finish = System.nanoTime();
+
+        log.info(String.format("#blocks %d, #records %d, duration %d ms\n",
+                handler.getBlockCount(), handler.getRecordCount(),  (finish - start) / 1000_000));
+    }
+
+    @Test
+    public void testReadSample3() throws IOException, URISyntaxException {
+        URL example3 = ClassLoader.getSystemResource("bam/example3");
+        Path path = Paths.get(example3.toURI());
+
+        BamFileReader fileReader = new DefaultBamFileReader(new DefaultBamRecordParser());
+
+        TestHandler handler = new TestHandler();
+        long start = System.nanoTime();
+        fileReader.read(path, handler);
+        long finish = System.nanoTime();
+
+        log.info(String.format("#blocks %d, #records %d, duration %d ms\n",
+                handler.getBlockCount(), handler.getRecordCount(),  (finish - start) / 1000_000));
+    }
+
+    private static class TestHandler implements BamRecordHandler {
         private long blockCount;
         private long recordCount;
         private long blockPos;
-        private long recordNum;
+        private long offset;
 
         public TestHandler() {
             blockCount = 0;
             recordCount = 0;
-        }
-
-        @Override
-        public void onBlock(ByteBuffer byteBuffer, long blockPos) {
-            this.blockPos = blockPos;
-
-            blockCount++;
-            if (blockCount % 100 == 0) {
-                log.debug(String.format("block pos %d\n", blockPos));
-            }
-        }
-
-        @Override
-        public void onRecord(ByteBuffer byteBuffer, int byteLen, int recordNum) {
-            this.recordNum = recordNum;
-
-            recordCount++;
-            if (recordCount % 100_000 == 0) {
-                log.debug(String.format("block pos %d, record num %d\n", blockPos, recordNum));
-            }
-        }
-
-        @Override
-        public void onQname(ByteBuffer byteBuffer, int byteLen) {
-            if (recordCount % 100_000 == 0) {
-                byte[] qname = new byte[byteLen];
-                byteBuffer.get(qname, 0, byteLen);
-                String decoded = Ascii7Decoder.INSTANCE.decode(qname, 0, qname.length);
-                log.debug(String.format("block pos %d, record num %d, qname %s\n", blockPos, recordNum, decoded));
-            }
-        }
-
-        @Override
-        public void onSequence(ByteBuffer byteBuffer, int fieldLen) {
-            if (recordCount % 100_000 == 0) {
-                int byteLen = (fieldLen + 1) /2;
-                byte[] seq = new byte[byteLen];
-                byteBuffer.get(seq, 0, byteLen);
-                String decoded = SeqDecoder.INSTANCE.decode(seq, 0, fieldLen);
-                log.debug(String.format("block pos %d, record num %d, seq %s\n", blockPos, recordNum, decoded));
-            }
         }
 
         public long getBlockCount() {
@@ -88,6 +78,31 @@ public class BamFileReaderTest {
 
         public long getRecordCount() {
             return recordCount;
+        }
+
+        @Override
+        public void onRecord(long blockPos, int offset) {
+            this.blockPos = blockPos;
+            this.offset = offset;
+
+            recordCount++;
+            blockCount++;
+        }
+
+        @Override
+        public void onQname(byte[] qname) {
+            if (recordCount % 100_000 == 1) {
+                String decoded = Ascii7Decoder.INSTANCE.decode(qname, 0, qname.length);
+                log.debug(String.format("block pos %d, offset %d, qname %s\n", blockPos, offset, decoded));
+            }
+        }
+
+        @Override
+        public void onSequence(byte[] seq, int fieldLen) {
+            if (recordCount % 100_000 == 1) {
+                String decoded = SeqDecoder.INSTANCE.decode(seq, 0, fieldLen);
+                log.debug(String.format("block pos %d, offset %d, seq %s\n", blockPos, offset, decoded));
+            }
         }
     }
 }
