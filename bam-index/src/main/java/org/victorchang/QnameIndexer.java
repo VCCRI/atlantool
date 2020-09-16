@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Arrays;
 
 public class QnameIndexer implements BamRecordHandler {
@@ -22,46 +21,50 @@ public class QnameIndexer implements BamRecordHandler {
     private long blockPos;
     private int offset;
 
-    private int fileNo;
-    private final QnamePos[] positions;
-    private int pos;
+    private QnamePos[] data;
+    private int count;
+    private int indexFileNo;
+    private Path indexFolder;
 
     public QnameIndexer(BamFileReader fileReader) {
         this.fileReader = fileReader;
-
-        fileNo = 0;
-        positions = new QnamePos[BUFFER_SIZE];
-        pos = 0;
     }
 
-    public void createIndex(Path bamFile) throws IOException {
+    public void createIndex(Path bamFile, Path indexFolder) throws IOException {
+        this.indexFileNo = 0;
+        this.indexFolder = indexFolder;
+        this.data = new QnamePos[BUFFER_SIZE];
+        this.count = 0;
+
         fileReader.read(bamFile, this);
-        if (pos > 0) {
-            createFst(nextPath());
+        if (count > 0) {
+            createFst(nextIndexFile());
         }
     }
 
-    private Path nextPath() {
-        Path path = Paths.get(".", "qname" + fileNo);
-        fileNo++;
+    private Path nextIndexFile() {
+        Path path = indexFolder.resolve("qname" + indexFileNo);
+        indexFileNo++;
         return path;
     }
 
     private void createFst(Path path) throws IOException {
-        Arrays.sort(positions, 0, pos);
+        Arrays.sort(data, 0, count);
 
         PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
         Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
         IntsRefBuilder intsRefBuilder = new IntsRefBuilder();
-        for (int i = 0; i < pos; i++) {
-            fstBuilder.add(toIntsRef(positions[i].getQname(), intsRefBuilder), positions[i].getPosition());
+        for (int i = 0; i < count; i++) {
+            fstBuilder.add(toIntsRef(data[i].getQname(), intsRefBuilder), data[i].getPosition());
         }
 
         FST<Long> fst = fstBuilder.finish();
         fst.save(path);
 
-        Arrays.fill(positions, null);
-        pos = 0;
+        log.info(path.toString() + " is created");
+
+        Arrays.fill(data, null);
+        count = 0;
     }
 
     private IntsRef toIntsRef(byte[] bytes, IntsRefBuilder intsRefBuilder) {
@@ -74,20 +77,17 @@ public class QnameIndexer implements BamRecordHandler {
 
     @Override
     public void onRecord(long blockPos, int offset) {
-        if (blockPos < 0 || offset < 0) {
-            log.warn(String.format("negative block pos %d or offset %d", blockPos, offset));
-        }
         this.blockPos = blockPos;
         this.offset = offset;
     }
 
     @Override
     public void onQname(byte[] bytes) {
-        positions[pos++] = new QnamePos(blockPos, offset, bytes);
+        data[count++] = new QnamePos(blockPos, offset, bytes);
 
-        if (pos >= BUFFER_SIZE) {
+        if (count >= BUFFER_SIZE) {
             try {
-                createFst(nextPath());
+                createFst(nextIndexFile());
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }

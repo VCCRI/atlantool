@@ -56,7 +56,7 @@ public class DefaultBamFileReader implements BamFileReader {
                 GzipEntryPosition position = positionFinder.getPosition(uncompressedStream.getBytesRead() - 4);
 
                 if (position == null) {
-                    throw new IllegalStateException("can't find start of Gzip entry");
+                    throw new IllegalStateException("Can't find start of a gzip entry");
                 }
 
                 int offset = (int) (uncompressedStream.getBytesRead() - position.getUncompressed() - 4);

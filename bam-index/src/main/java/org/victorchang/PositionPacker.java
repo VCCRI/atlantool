@@ -20,7 +20,7 @@ public final class PositionPacker {
         return (pos & 0x0000effffffffffL);
     }
 
-    public int unpackRecordNum(long pos) {
+    public int unpackOffset(long pos) {
         return (int)(pos >> 47 & 0xffff);
     }
 }
