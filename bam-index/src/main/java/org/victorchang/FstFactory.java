@@ -51,7 +51,7 @@ public class FstFactory {
                 if (k > 255) {
                     throw new IllegalStateException("There is more than 256 records with the same qname");
                 }
-                qname[qname.length - 1] = (byte)k; // up to 2^8 duplicated keys are supported
+                qname[qname.length - 1] = (byte)k;
                 fstBuilder.add(createIntsRef(current.getQname(), intsRefBuilder), current.getPosition());
             }
             FST<Long> fst = fstBuilder.finish();

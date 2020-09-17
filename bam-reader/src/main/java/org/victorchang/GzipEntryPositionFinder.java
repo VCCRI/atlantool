@@ -1,19 +1,16 @@
 package org.victorchang;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class GzipEntryPositionFinder implements GzipEntryEventHandler {
-    private final List<GzipEntryPosition> positions;
+    private GzipEntryPosition tail;
 
     public GzipEntryPositionFinder() {
-        this.positions = new ArrayList<>();
+        this.tail = null;
     }
 
     public GzipEntryPosition find(long uncompressed) {
-        for (int i = positions.size() - 1; i >= 0; i--) {
-            GzipEntryPosition current = positions.get(i);
+        for (GzipEntryPosition current = tail; current != null; current = current.getPrevious()) {
             if (uncompressed >= current.getUncompressed()) {
+                current.setPrevious(null);
                 return current;
             }
         }
@@ -23,6 +20,6 @@ public class GzipEntryPositionFinder implements GzipEntryEventHandler {
 
     @Override
     public void onStart(long compressedCount, long uncompressedCount) {
-        positions.add(new GzipEntryPosition(compressedCount, uncompressedCount));
+        tail = new GzipEntryPosition(tail, compressedCount, uncompressedCount);
     }
 }
