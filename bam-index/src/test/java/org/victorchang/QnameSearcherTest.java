@@ -19,8 +19,9 @@ public class QnameSearcherTest {
 
         long start = System.nanoTime();
 
-        BamRecordReader recordReader = new DefaultBamRecordReader(new DefaultBamRecordParser());
-        QnameSearcher searcher = new QnameSearcher(recordReader, indexFolder, example2);
+        BamRecordReader bamRecordReader = new DefaultBamRecordReader(new DefaultBamRecordParser());
+        QnamePosReader qnamePosReader = new QnamePosReader();
+        QnameSearcher searcher = new QnameSearcher(qnamePosReader, indexFolder, bamRecordReader, example2);
 
         searcher.search("SOLEXA-1GA-1_4_FC20ENL:7:172:55:704");
 

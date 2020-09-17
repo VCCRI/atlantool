@@ -63,13 +63,13 @@ public class BamRecordReaderTest {
         }
 
         @Override
-        public void onQname(byte[] qname) {
-            this.qname = Ascii7Decoder.INSTANCE.decode(qname, 0, qname.length);
+        public void onQname(byte[] qnameBuffer, int qnameLen) {
+            this.qname = Ascii7Coder.INSTANCE.decode(qnameBuffer, 0, qnameLen);
         }
 
         @Override
-        public void onSequence(byte[] seq, int fieldLen) {
-            this.seq = SeqDecoder.INSTANCE.decode(seq, 0, fieldLen);
+        public void onSequence(byte[] seqBuffer, int seqLen) {
+            this.seq = SeqDecoder.INSTANCE.decode(seqBuffer, 0, seqLen);
         }
 
         public String getQname() {

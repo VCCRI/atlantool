@@ -1,11 +1,10 @@
 package org.victorchang;
 
 import java.util.Arrays;
-import java.util.function.BiConsumer;
 
-public class QnameCollector implements BamRecordHandler {
+public class QnamePosCollector implements BamRecordHandler {
 
-    private final BiConsumer<QnamePos[], Integer> flusher;
+    private final QnamePosFlusher flusher;
 
     private final int maxRecord;
     private final QnamePos[] buffer;
@@ -14,7 +13,7 @@ public class QnameCollector implements BamRecordHandler {
     private long blockPos;
     private int offset;
 
-    public QnameCollector(BiConsumer<QnamePos[], Integer> flusher, int maxRecord) {
+    public QnamePosCollector(QnamePosFlusher flusher, int maxRecord) {
         this.flusher = flusher;
         this.maxRecord = maxRecord;
         this.buffer = new QnamePos[maxRecord];
@@ -28,8 +27,8 @@ public class QnameCollector implements BamRecordHandler {
     }
 
     @Override
-    public void onQname(byte[] bytes) {
-        buffer[recordCount++] = new QnamePos(blockPos, offset, bytes);
+    public void onQname(byte[] qnameBuffer, int qnameLen) {
+        this.buffer[recordCount++] = new QnamePos(blockPos, offset, qnameBuffer, qnameLen);
 
         if (recordCount >= maxRecord) {
             flush();
@@ -37,12 +36,12 @@ public class QnameCollector implements BamRecordHandler {
     }
 
     @Override
-    public void onSequence(byte[] bytes, int fieldLen) {
+    public void onSequence(byte[] seqBuffer, int seqLen) {
     }
 
     public void flush() {
         if (recordCount > 0) {
-            flusher.accept(buffer, recordCount);
+            flusher.flush(buffer, recordCount);
             Arrays.fill(buffer, null);
             recordCount = 0;
         }

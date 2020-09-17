@@ -6,7 +6,7 @@ package org.victorchang;
 public interface BamRecordHandler {
     void onRecord(long blockPos, int offset);
 
-    void onQname(byte[] bytes);
+    void onQname(byte[] qnameBuffer, int qnameLen);
 
-    void onSequence(byte[] bytes, int fieldLen);
+    void onSequence(byte[] seqBuffer, int seqLen);
 }

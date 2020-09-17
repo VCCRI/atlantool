@@ -112,3 +112,6 @@ fabric.properties
 
 # FST file
 *.fst
+
+# sorted qname file
+*.sorted

@@ -14,7 +14,7 @@
     </modules>
 
     <properties>
-        <guava.version>26.0-jre</guava.version>
+        <guava.version>29.0-jre</guava.version>
         <slf4j-api.version>1.7.25</slf4j-api.version>
         <logback-classic.version>1.2.3</logback-classic.version>
         <commons-compress.version>1.20</commons-compress.version>

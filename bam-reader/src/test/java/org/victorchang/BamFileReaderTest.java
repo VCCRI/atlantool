@@ -90,17 +90,17 @@ public class BamFileReaderTest {
         }
 
         @Override
-        public void onQname(byte[] qname) {
+        public void onQname(byte[] qnameBuffer, int qnameLen) {
             if (recordCount % 100_000 == 1) {
-                String decoded = Ascii7Decoder.INSTANCE.decode(qname, 0, qname.length);
+                String decoded = Ascii7Coder.INSTANCE.decode(qnameBuffer, 0, qnameLen);
                 log.debug(String.format("block pos %d, offset %d, qname %s\n", blockPos, offset, decoded));
             }
         }
 
         @Override
-        public void onSequence(byte[] seq, int fieldLen) {
+        public void onSequence(byte[] seqBuffer, int seqLen) {
             if (recordCount % 100_000 == 1) {
-                String decoded = SeqDecoder.INSTANCE.decode(seq, 0, fieldLen);
+                String decoded = SeqDecoder.INSTANCE.decode(seqBuffer, 0, seqLen);
                 log.debug(String.format("block pos %d, offset %d, seq %s\n", blockPos, offset, decoded));
             }
         }

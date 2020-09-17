@@ -10,14 +10,14 @@ public final class SeqDecoder {
     private SeqDecoder() {
     }
 
-    public String decode(byte[] buffer, int offset, int fieldLen) {
-        byte[] ascii = new byte[fieldLen];
-        for (int i = 0; i < (fieldLen + 1) /2; i++) {
+    public String decode(byte[] buffer, int offset, int seqLen) {
+        byte[] ascii = new byte[seqLen];
+        for (int i = 0; i < (seqLen + 1) /2; i++) {
             ascii[2*i] = LETTERS[buffer[offset + i] & 0xFF >> 4];
-            if (2*i + 1 < fieldLen) {
+            if (2*i + 1 < seqLen) {
                 ascii[2 * i + 1] = LETTERS[buffer[offset + i] & 0xF];
             }
         }
-        return new String(ascii, 0, fieldLen, StandardCharsets.US_ASCII);
+        return new String(ascii, 0, seqLen, StandardCharsets.US_ASCII);
     }
 }

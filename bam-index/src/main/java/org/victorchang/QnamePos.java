@@ -1,14 +1,22 @@
 package org.victorchang;
 
 import java.util.Arrays;
+import java.util.StringJoiner;
 
 public class QnamePos implements Comparable<QnamePos> {
     private final long position;
     private final byte[] qname;
 
-    public QnamePos(long blockPos, int offset, byte[] qname) {
-        this.qname = qname;
+    public QnamePos(long blockPos, int offset, byte[] qnameBuffer, int qnameLen) {
+        this.qname = new byte[qnameLen];
+        System.arraycopy(qnameBuffer, 0, qname, 0, qnameLen);
         position = PositionPacker.INSTANCE.pack(blockPos, offset);
+    }
+
+    public QnamePos(long position, byte[] qnameBuffer, int qnameLen) {
+        this.position = position;
+        this.qname = new byte[qnameLen];
+        System.arraycopy(qnameBuffer, 0, qname, 0, qnameLen);
     }
 
     public long getPosition() {
@@ -21,6 +29,15 @@ public class QnamePos implements Comparable<QnamePos> {
 
     @Override
     public int compareTo(QnamePos that) {
-        return Arrays.compare(this.qname, that.qname);
+        return Arrays.compareUnsigned(this.qname, that.qname);
+    }
+
+    @Override
+    public String toString() {
+        return new StringJoiner(", ")
+                .add("position=" + PositionPacker.INSTANCE.unpackBlockPos(position))
+                .add("offset=" + PositionPacker.INSTANCE.unpackOffset(position))
+                .add("qname=" + Ascii7Coder.INSTANCE.decode(qname, 0, qname.length))
+                .toString();
     }
 }

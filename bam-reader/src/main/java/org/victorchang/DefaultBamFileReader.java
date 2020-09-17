@@ -18,7 +18,7 @@ import static java.nio.file.StandardOpenOption.READ;
 public class DefaultBamFileReader implements BamFileReader {
     private static final Logger log = LoggerFactory.getLogger(DefaultBamFileReader.class);
 
-    private static final int BUFF_SIZE = 8192;
+    private static final int FILE_BUFF_SIZE = 8192;
     private static final byte[] MAGIC = {'B', 'A', 'M', 1};
 
     private final BamRecordParser recordParser;
@@ -31,12 +31,12 @@ public class DefaultBamFileReader implements BamFileReader {
     @Override
     public void read(Path bamFile, BamRecordHandler handler) throws IOException {
         try (FileChannel fileChannel = FileChannel.open(bamFile, READ)) {
-            InputStream compressedStream = new BufferedInputStream(Channels.newInputStream(fileChannel), BUFF_SIZE);
+            InputStream compressedStream = new BufferedInputStream(Channels.newInputStream(fileChannel), FILE_BUFF_SIZE);
 
             GzipEntryPositionFinder positionFinder = new GzipEntryPositionFinder();
             CountingInputStream uncompressedStream = new CountingInputStream(
                     new BufferedInputStream(
-                            new GzipCompressorInputStream(compressedStream, positionFinder), BUFF_SIZE));
+                            new GzipCompressorInputStream(compressedStream, positionFinder), FILE_BUFF_SIZE));
 
             LittleEndianDataInputStream dataInput = new LittleEndianDataInputStream(uncompressedStream);
             assertMagic(dataInput);
