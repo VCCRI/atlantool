@@ -1,5 +1,9 @@
 package org.victorchang;
 
+/**
+ * Packs block position and offset into a positive long required by Lucene FST implementation. It assumes that
+ * 0 <= position < 2^47 and 0 <= offset < 2^16.
+ */
 public final class PositionPacker {
     public static PositionPacker INSTANCE = new PositionPacker();
 
@@ -11,7 +15,7 @@ public final class PositionPacker {
             throw new IllegalArgumentException("Block position must be less than 2^47");
         }
         if ((offset & 0xffff0000) != 0) {
-            throw new IllegalArgumentException("Record number must be less than 2^16");
+            throw new IllegalArgumentException("Offset must be less than 2^16");
         }
         return (blockPos | (long)offset << 47);
     }

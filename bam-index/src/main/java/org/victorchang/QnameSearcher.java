@@ -9,38 +9,53 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 public class QnameSearcher implements BamRecordHandler {
     private static final Logger log = LoggerFactory.getLogger(QnameIndexer.class);
 
-    private final Path indexFile;
     private final Path bamFile;
+    private final Path indexFolder;
     private final BamRecordReader recordReader;
 
-    public QnameSearcher(Path bamFile, Path indexFile, BamRecordReader recordReader) {
-        this.indexFile = indexFile;
+    public QnameSearcher(Path bamFile, Path indexFolder, BamRecordReader recordReader) throws IOException {
         this.bamFile = bamFile;
+        this.indexFolder = indexFolder;
         this.recordReader = recordReader;
     }
 
     public void search(String qname) throws IOException {
+        Files.list(indexFolder)
+                .filter(x -> x.getFileName().toString().startsWith("qname") && x.getFileName().toString().endsWith(".fst"))
+                .filter(Files::isRegularFile)
+                .forEach(x -> search(qname, x));
+    }
+
+    public void search(String qname, Path indexFile) {
         PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
-        FST<Long> fst = FST.read(indexFile, outputs);
+        try {
+            FST<Long> fst;
+            log.info("Loading fst from {}", indexFile);
+            fst = FST.read(indexFile, outputs);
 
-        byte[] input = new byte[qname.length() + 1]; // add null terminated
-        byte[] bytes = qname.getBytes(StandardCharsets.US_ASCII);
-        System.arraycopy(bytes, 0, input, 0, bytes.length);
+            byte[] input = new byte[qname.length() + 1]; // add null terminated
+            byte[] bytes = qname.getBytes(StandardCharsets.US_ASCII);
+            System.arraycopy(bytes, 0, input, 0, bytes.length);
 
-        Long value = Util.get(fst, new BytesRef(input));
+            log.info("Searching in {}", indexFile);
+            Long value = Util.get(fst, new BytesRef(input));
 
-        if (value != null) {
-            long pos = PositionPacker.INSTANCE.unpackBlockPos(value);
-            int offset = PositionPacker.INSTANCE.unpackOffset(value);
+            if (value != null) {
+                long pos = PositionPacker.INSTANCE.unpackBlockPos(value);
+                int offset = PositionPacker.INSTANCE.unpackOffset(value);
 
-            log.info(String.format("pos %d, offset %d", pos, offset));
+                log.info("Found record at pos {}, offset {}", pos, offset);
 
-            recordReader.read(bamFile, pos, offset, this);
+                recordReader.read(bamFile, pos, offset, this);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
