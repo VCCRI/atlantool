@@ -11,6 +11,7 @@
     <modules>
         <module>bam-reader</module>
         <module>bam-index</module>
+        <module>bam-cmd</module>
     </modules>
 
     <properties>
