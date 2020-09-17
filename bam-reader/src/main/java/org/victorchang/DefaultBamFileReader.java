@@ -12,8 +12,6 @@ import java.io.InputStream;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 import static java.nio.file.StandardOpenOption.READ;
 
@@ -35,7 +33,7 @@ public class DefaultBamFileReader implements BamFileReader {
         try (FileChannel fileChannel = FileChannel.open(bamFile, READ)) {
             InputStream compressedStream = new BufferedInputStream(Channels.newInputStream(fileChannel), BUFF_SIZE);
 
-            PositionFinder positionFinder = new PositionFinder();
+            GzipEntryPositionFinder positionFinder = new GzipEntryPositionFinder();
             CountingInputStream uncompressedStream = new CountingInputStream(
                     new BufferedInputStream(
                             new GzipCompressorInputStream(compressedStream, positionFinder), BUFF_SIZE));
@@ -53,7 +51,7 @@ public class DefaultBamFileReader implements BamFileReader {
                     break;
                 }
 
-                GzipEntryPosition position = positionFinder.getPosition(uncompressedStream.getBytesRead() - 4);
+                GzipEntryPosition position = positionFinder.find(uncompressedStream.getBytesRead() - 4);
 
                 if (position == null) {
                     throw new IllegalStateException("Can't find start of a gzip entry");
@@ -72,48 +70,6 @@ public class DefaultBamFileReader implements BamFileReader {
                     recordLength -= dataInput.skipBytes(recordLength);
                 }
             }
-        }
-    }
-
-    private static class GzipEntryPosition {
-        private final long compressed;
-        private final long uncompressed;
-
-        public GzipEntryPosition(long compressed, long uncompressed) {
-            this.compressed = compressed;
-            this.uncompressed = uncompressed;
-        }
-
-        public long getCompressed() {
-            return compressed;
-        }
-
-        public long getUncompressed() {
-            return uncompressed;
-        }
-    }
-
-    private static class PositionFinder implements GzipEntryEventHandler {
-        private final List<GzipEntryPosition> positions;
-
-        public PositionFinder() {
-            this.positions = new ArrayList<>();
-        }
-
-        public GzipEntryPosition getPosition(long uncompressed) {
-            for (int i = positions.size() - 1; i >= 0; i--) {
-                GzipEntryPosition current = positions.get(i);
-                if (uncompressed >= current.getUncompressed()) {
-                    return current;
-                }
-            }
-
-            return null;
-        }
-
-        @Override
-        public void onStart(long compressedCount, long uncompressedCount) {
-            positions.add(new GzipEntryPosition(compressedCount, uncompressedCount));
         }
     }
 

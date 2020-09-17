@@ -19,7 +19,7 @@ public class QnameSearcher implements BamRecordHandler {
     private final Path indexFolder;
     private final BamRecordReader recordReader;
 
-    public QnameSearcher(Path bamFile, Path indexFolder, BamRecordReader recordReader) throws IOException {
+    public QnameSearcher(Path bamFile, Path indexFolder, BamRecordReader recordReader) {
         this.bamFile = bamFile;
         this.indexFolder = indexFolder;
         this.recordReader = recordReader;

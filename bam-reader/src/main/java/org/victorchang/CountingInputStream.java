@@ -1,6 +1,6 @@
 /*
- * Copy from org.apache.commons.compress.utils.CountingInputStream and modify to correct gzip file position in
- * a concatenate archive.
+ * Copy from org.apache.commons.compress.utils.CountingInputStream and modify to correct file position in
+ * a concatenated gzip file.
  */
 package org.victorchang;
 
