@@ -19,7 +19,7 @@ public class QnameSearcher implements BamRecordHandler {
     private final Path indexFolder;
     private final BamRecordReader recordReader;
 
-    public QnameSearcher(Path bamFile, Path indexFolder, BamRecordReader recordReader) {
+    public QnameSearcher(BamRecordReader recordReader, Path indexFolder, Path bamFile) {
         this.bamFile = bamFile;
         this.indexFolder = indexFolder;
         this.recordReader = recordReader;
@@ -39,20 +39,26 @@ public class QnameSearcher implements BamRecordHandler {
             log.info("Loading fst from {}", indexFile);
             fst = FST.read(indexFile, outputs);
 
-            byte[] input = new byte[qname.length() + 1]; // add null terminated
+            byte[] input = new byte[qname.length() + 1]; // add 1 byte for key instance
             byte[] bytes = qname.getBytes(StandardCharsets.US_ASCII);
             System.arraycopy(bytes, 0, input, 0, bytes.length);
 
             log.info("Searching in {}", indexFile);
-            Long value = Util.get(fst, new BytesRef(input));
+            for (int k = 0; k < 256; k++) {
+                input[input.length - 1] = (byte) k;
 
-            if (value != null) {
-                long pos = PositionPacker.INSTANCE.unpackBlockPos(value);
-                int offset = PositionPacker.INSTANCE.unpackOffset(value);
+                Long value = Util.get(fst, new BytesRef(input));
 
-                log.info("Found record at pos {}, offset {}", pos, offset);
+                if (value != null) {
+                    long pos = PositionPacker.INSTANCE.unpackBlockPos(value);
+                    int offset = PositionPacker.INSTANCE.unpackOffset(value);
 
-                recordReader.read(bamFile, pos, offset, this);
+                    log.info("Found record at pos {}, offset {}", pos, offset);
+
+                    recordReader.read(bamFile, pos, offset, this);
+                } else {
+                    break;
+                }
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

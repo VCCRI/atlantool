@@ -24,6 +24,9 @@ public class FstFactory {
     }
 
     public void create(QnamePos[] buffer, int count) {
+        if (count <= 0) {
+            throw new IllegalArgumentException("number of record count must be greater than 0");
+        }
         Arrays.sort(buffer, 0, count);
 
         PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
@@ -32,8 +35,24 @@ public class FstFactory {
 
         Path path = nextFile();
         try {
-            for (int i = 0; i < count; i++) {
-                fstBuilder.add(createIntsRef(buffer[i].getQname(), intsRefBuilder), buffer[i].getPosition());
+            int k = 0;
+            QnamePos previous;
+            QnamePos current = buffer[0];
+            fstBuilder.add(createIntsRef(current.getQname(), intsRefBuilder), current.getPosition());
+            for (int i = 1; i < count; i++) {
+                previous = current;
+                current = buffer[i];
+                if (current.compareTo(previous) == 0) {
+                    k++; // duplicated key
+                } else {
+                    k = 0;
+                }
+                byte[] qname = current.getQname();
+                if (k > 255) {
+                    throw new IllegalStateException("There is more than 256 records with the same qname");
+                }
+                qname[qname.length - 1] = (byte)k; // up to 2^8 duplicated keys are supported
+                fstBuilder.add(createIntsRef(current.getQname(), intsRefBuilder), current.getPosition());
             }
             FST<Long> fst = fstBuilder.finish();
             fst.save(path);

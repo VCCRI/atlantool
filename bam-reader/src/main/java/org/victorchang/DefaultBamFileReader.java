@@ -57,9 +57,12 @@ public class DefaultBamFileReader implements BamFileReader {
                     throw new IllegalStateException("Can't find start of a gzip entry");
                 }
 
-                int offset = (int) (uncompressedStream.getBytesRead() - position.getUncompressed() - 4);
+                long offset = uncompressedStream.getBytesRead() - position.getUncompressed() - 4;
 
-                handler.onRecord(position.getCompressed(), offset);
+                if (offset < 0 || offset >= (1 << 16)) {
+                    throw new IllegalStateException("offset must be in the range of [0,2^16)");
+                }
+                handler.onRecord(position.getCompressed(), (int)offset);
 
                 dataInput.mark(recordLength);
 

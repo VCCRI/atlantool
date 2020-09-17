@@ -12,11 +12,11 @@ public class QnameIndexer {
         this.maxRecord = maxRecord;
     }
 
-    public void createIndex(Path bamFile, Path indexFolder) throws IOException {
+    public void createIndex(Path indexFolder, Path bamFile) throws IOException {
         FstFactory fstFactory = new FstFactory(indexFolder);
         QnameCollector collector = new QnameCollector(fstFactory::create, maxRecord);
 
         fileReader.read(bamFile, collector);
-        collector.flush();;
+        collector.flush();
     }
 }

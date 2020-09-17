@@ -14,15 +14,15 @@ public class QnameSearcherTest {
 
     @Test
     public void testSearch() throws IOException, URISyntaxException {
-        Path example2 = Paths.get(ClassLoader.getSystemResource("bam/example2").toURI());
+        Path example2 = Paths.get(ClassLoader.getSystemResource("bam/example1b").toURI());
         Path indexFolder = Paths.get(".");
 
         long start = System.nanoTime();
 
         BamRecordReader recordReader = new DefaultBamRecordReader(new DefaultBamRecordParser());
-        QnameSearcher searcher = new QnameSearcher(example2, indexFolder, recordReader);
+        QnameSearcher searcher = new QnameSearcher(recordReader, indexFolder, example2);
 
-        searcher.search("SOLEXA-1GA-1_6_FC20ET7:6:123:333:155");
+        searcher.search("SOLEXA-1GA-1_4_FC20ENL:7:172:55:704");
 
         long finish = System.nanoTime();
 
