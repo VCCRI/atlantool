@@ -87,14 +87,18 @@ public class DefaultBamFileReader implements BamFileReader {
 
     private void skipHeaderText(DataInput dataInput) throws IOException {
         int len = dataInput.readInt();
-        dataInput.skipBytes(len);
+        while (len > 0 ) {
+            len -= dataInput.skipBytes(len);
+        }
     }
 
     private void skipReferences(DataInput dataInput) throws IOException {
         int refCount = dataInput.readInt();
         for (int i = 0; i < refCount; i++) {
-            int len = dataInput.readInt();
-            dataInput.skipBytes(len + 4);
+            int len = dataInput.readInt() + 4;
+            while (len > 0) {
+                len -= dataInput.skipBytes(len);
+            }
         }
     }
 }
