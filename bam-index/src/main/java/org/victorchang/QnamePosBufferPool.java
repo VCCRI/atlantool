@@ -3,7 +3,7 @@ package org.victorchang;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-public class QnamePosBufferPool {
+public final class QnamePosBufferPool {
     private final BlockingQueue<QnamePosBuffer> queue;
 
     public QnamePosBufferPool(int poolSize, int bufferSize) {

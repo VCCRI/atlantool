@@ -23,7 +23,6 @@ public class QnamePosCollector implements BamRecordHandler {
     private long blockPos;
     private int offset;
 
-
     public QnamePosCollector(QnamePosBufferPool bufferPool, ExecutorService executorService, QnamePosFlusher flusher) {
         this.bufferPool = bufferPool;
         this.executorService = executorService;
@@ -65,6 +64,7 @@ public class QnamePosCollector implements BamRecordHandler {
     public void await() {
         if (currentBuffer.size() > 0) {
             flush();
+            currentBuffer.release();
         }
         for (Future<Integer> task : pendingTasks) {
             try {

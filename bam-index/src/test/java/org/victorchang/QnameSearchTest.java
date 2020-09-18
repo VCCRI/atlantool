@@ -11,6 +11,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+
 public class QnameSearchTest {
     private static final int MAX_RECORD = 500_000;
     private static final int MAX_THREAD = 4;
@@ -31,7 +34,7 @@ public class QnameSearchTest {
     }
 
     @Test
-    public void createIndexTest() throws IOException, URISyntaxException {
+    public void searchExample1bTest() throws IOException, URISyntaxException {
         Path bamFile = Paths.get(ClassLoader.getSystemResource("bam/example1b").toURI());
         Path indexFolder = Paths.get("bam/example1b");
         Files.createDirectories(indexFolder);
@@ -42,12 +45,15 @@ public class QnameSearchTest {
 
         log.info("Create index of {} records completed in {}", recordCount, (finish - start) / 1000_000 + "ms");
 
-        searcher.search(bamFile, indexFolder, "SOLEXA-1GA-1_4_FC20ENL:7:172:55:704");
-        searcher.search(bamFile, indexFolder, "SOLEXA-1GA-1_1_FC20EMA:7:100:100:372");
+        int found = searcher.search(bamFile, indexFolder, "SOLEXA-1GA-1_1_FC20EMA:7:100:100:372");
+        assertThat(found, equalTo(2));
+
+        found = searcher.search(bamFile, indexFolder, "SOLEXA-1GA-1_1_FC20EMA:7:233:258:501");
+        assertThat(found, equalTo(2));
     }
 
     @Test
-    public void createIndex256M() throws IOException, URISyntaxException {
+    public void search256MTest() throws IOException, URISyntaxException {
         Path bamFile = Paths.get(ClassLoader.getSystemResource("bam/256M.bam").toURI());
         Path indexFolder = Paths.get("bam/256M.bam");
         Files.createDirectories(indexFolder);
@@ -58,6 +64,10 @@ public class QnameSearchTest {
 
         log.info("Create index of {} records completed in {}", recordCount, (finish - start) / 1000_000 + "ms");
 
-        searcher.search(bamFile, indexFolder, "E00431:98:HCK73ALXX:7:2215:12165:39686");
+        int found = searcher.search(bamFile, indexFolder, "E00431:98:HCK73ALXX:7:1101:10003:27785");
+        assertThat(found, equalTo(2));
+
+        found = searcher.search(bamFile, indexFolder, "E00431:98:HCK73ALXX:7:1219:22516:60782");
+        assertThat(found, equalTo(3));
     }
 }

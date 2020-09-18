@@ -16,13 +16,9 @@ public class QnameIndexer {
     private final BamFileReader bamFileReader;
     private final QnamePosWriter qnamePosWriter;
     private final QnamePosReader qnamePosReader;
-    private final int maxRecord;
-
-    private final int threadCount;
 
     private final ExecutorService executorService;
     private final  QnamePosBufferPool bufferPool;
-
 
     public QnameIndexer(BamFileReader bamFileReader,
                         QnamePosWriter qnamePosWriter,
@@ -32,11 +28,9 @@ public class QnameIndexer {
         this.bamFileReader = bamFileReader;
         this.qnamePosWriter = qnamePosWriter;
         this.qnamePosReader = qnamePosReader;
-        this.threadCount = threadCount;
-        this.maxRecord = maxRecord;
 
         executorService = Executors.newFixedThreadPool(threadCount);
-        bufferPool = new QnamePosBufferPool(threadCount, maxRecord);
+        bufferPool = new QnamePosBufferPool(threadCount + 1, maxRecord);
     }
 
     public long createIndex(Path indexFolder, Path bamFile) throws IOException {
@@ -73,11 +67,16 @@ public class QnameIndexer {
             rangesBuffer.add(x);
         }
         qnamePosWriter.create(rangesPath, rangesBuffer);
+        rangesBuffer.release();
 
         sorted.forEach(BaseStream::close);
 
         qnameStore.deleteAll();
 
         return recordCount;
+    }
+
+    public void shutDown() {
+        executorService.shutdown();
     }
 }

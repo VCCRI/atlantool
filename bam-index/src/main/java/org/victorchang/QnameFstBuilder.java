@@ -58,29 +58,31 @@ public class QnameFstBuilder {
         if (startRecord == null) {
             startRecord = currentRecord;
         }
+
         if (Arrays.equals(currentRecord.getQname(), 0, currentRecord.getQname().length - 1,
                 previousQname, 0, previousLen)) {
             occurrence++; // duplicated key
+            if (occurrence > 255) {
+                throw new IllegalStateException("There is more than 256 records with the same qname");
+            }
             currentRecord.setOccurrence(occurrence);
         } else {
             occurrence = 0;
-        }
-        if (occurrence > 255) {
-            throw new IllegalStateException("There is more than 256 records with the same qname");
+            if (currentBuffer.size() > 0 && currentBuffer.size() + 256 >= currentBuffer.capacity()) {
+                flush();
+                startRecord = currentRecord;
+            }
         }
 
         previousLen = currentRecord.getQname().length - 1;
         System.arraycopy(currentRecord.getQname(), 0, previousQname, 0, previousLen);
         currentBuffer.add(currentRecord);
-
-        if (occurrence == 0 && currentBuffer.size() + 256 >= currentBuffer.capacity()) {
-            flush();
-        }
     }
 
     public void flush() {
         QnamePosBuffer busyBuffer = currentBuffer;
         currentBuffer = bufferPool.getBuffer();
+        Path path = indexStore.generate();
         log.info("Creating fst starting at {}",
                 Ascii7Coder.INSTANCE.decode(startRecord.getQname(), 0, startRecord.getQname().length));
         Future<Integer> flushingTask = executorService.submit(() -> {
@@ -96,17 +98,15 @@ public class QnameFstBuilder {
                 }
             });
 
-            Path path = indexStore.generate();
             FST<Long> fst = fstBuilder.finish();
             fst.save(path);
-            log.info("{} is created", path.toString());
+            log.info("{} is created", path);
 
             busyBuffer.release();
             return busyBuffer.size();
         });
         pendingTasks.add(flushingTask);
         qnameRanges.add(startRecord);
-        startRecord = null;
     }
 
     public void await() {

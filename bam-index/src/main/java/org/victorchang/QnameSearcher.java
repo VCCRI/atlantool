@@ -27,7 +27,7 @@ public class QnameSearcher implements BamRecordHandler {
         fstCache = new HashMap<>();
     }
 
-    public void search(Path bamFile, Path indexFolder, String qname) {
+    public int search(Path bamFile, Path indexFolder, String qname) {
         Path rangesPath = indexFolder.resolve("ranges.sorted");
 
         TreeMap<QnamePos, Path> indexFiles = new TreeMap<>();
@@ -40,16 +40,20 @@ public class QnameSearcher implements BamRecordHandler {
         }
 
         byte[] input = Ascii7Coder.INSTANCE.encode(qname);
+        int found = 0;
         for (int k = 0; k < 256; k++) {
             input[input.length - 1] = (byte) k;
             Map.Entry<QnamePos, Path> from = indexFiles.floorEntry(new QnamePos(0, input, input.length));
             if (from == null) {
                 break;
             }
-            if (!search(input, bamFile, from.getValue())) {
+            if (search(input, bamFile, from.getValue())) {
+                found++;
+            } else {
                 break;
             }
         }
+        return found;
     }
 
     private boolean search(byte[] input, Path bamFile, Path indexFile) {
