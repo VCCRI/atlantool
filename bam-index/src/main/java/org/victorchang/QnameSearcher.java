@@ -16,26 +16,18 @@ import java.util.TreeMap;
 public class QnameSearcher implements BamRecordHandler {
     private static final Logger log = LoggerFactory.getLogger(QnameIndexer.class);
 
-    private final Path bamFile;
-    private final Path indexFolder;
-
     private final QnamePosReader qnamePosReader;
     private final BamRecordReader recordReader;
 
     private final Map<Path, FST<Long>> fstCache;
 
-    public QnameSearcher(QnamePosReader qnamePosReader,
-                         Path indexFolder,
-                         BamRecordReader recordReader,
-                         Path bamFile) {
+    public QnameSearcher(QnamePosReader qnamePosReader, BamRecordReader recordReader) {
         this.qnamePosReader = qnamePosReader;
-        this.indexFolder = indexFolder;
-        this.bamFile = bamFile;
         this.recordReader = recordReader;
         fstCache = new HashMap<>();
     }
 
-    public void search(String qname) throws IOException {
+    public void search(Path bamFile, Path indexFolder, String qname) {
         Path rangesPath = indexFolder.resolve("ranges.sorted");
 
         TreeMap<QnamePos, Path> indexFiles = new TreeMap<>();
@@ -54,13 +46,13 @@ public class QnameSearcher implements BamRecordHandler {
             if (from == null) {
                 break;
             }
-            if (!search(input, from.getValue())) {
+            if (!search(input, bamFile, from.getValue())) {
                 break;
             }
         }
     }
 
-    private boolean search(byte[] input, Path indexFile) {
+    private boolean search(byte[] input, Path bamFile, Path indexFile) {
         FST<Long> fst = fstCache.computeIfAbsent(indexFile, file -> {
             log.info("Loading fst from {}", file);
             try {

@@ -27,12 +27,16 @@ public class QnameIndexer {
         this.maxRecord = maxRecord;
     }
 
+    public long createIndex(Path indexFolder, Path bamFile) throws IOException {
+        return createIndex(indexFolder, bamFile, Long.MAX_VALUE);
+    }
+
     @SuppressWarnings("UnstableApiUsage")
-    public void createIndex(Path indexFolder, Path bamFile) throws IOException {
+    public long createIndex(Path indexFolder, Path bamFile, long limit) throws IOException {
         SortedQnameFileFactory qnameFileFactory = new SortedQnameFileFactory(indexFolder, qnamePosWriter);
 
         QnamePosCollector collector = new QnamePosCollector(qnameFileFactory::create, maxRecord);
-        bamFileReader.read(bamFile, collector);
+        long recordCount = bamFileReader.read(bamFile, collector, limit);
         collector.flush();
 
         List<Path> files = Files.list(indexFolder)
@@ -64,6 +68,8 @@ public class QnameIndexer {
         for (Path path : files) {
             Files.delete(path);
         }
+
+        return recordCount;
     }
 
     private boolean isSortedQname(Path path) {

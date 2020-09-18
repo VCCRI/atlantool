@@ -27,9 +27,15 @@ public class DefaultBamFileReader implements BamFileReader {
         this.recordParser = recordParser;
     }
 
+    @Override
+    public long read(Path bamFile, BamRecordHandler handler) throws IOException {
+        return read(bamFile, handler, Long.MAX_VALUE);
+    }
+
     @SuppressWarnings("UnstableApiUsage")
     @Override
-    public void read(Path bamFile, BamRecordHandler handler) throws IOException {
+    public long read(Path bamFile, BamRecordHandler handler, long limit) throws IOException {
+        long recordCount = 0;
         try (FileChannel fileChannel = FileChannel.open(bamFile, READ)) {
             InputStream compressedStream = new BufferedInputStream(Channels.newInputStream(fileChannel), FILE_BUFF_SIZE);
 
@@ -43,7 +49,7 @@ public class DefaultBamFileReader implements BamFileReader {
             skipHeaderText(dataInput);
             skipReferences(dataInput);
 
-            while (true) {
+            while (recordCount < limit) {
                 int recordLength;
                 try {
                     recordLength = dataInput.readInt();
@@ -60,20 +66,21 @@ public class DefaultBamFileReader implements BamFileReader {
                 long offset = uncompressedStream.getBytesRead() - position.getUncompressed() - 4;
 
                 if (offset < 0 || offset >= (1 << 16)) {
-                    throw new IllegalStateException("offset must be in the range of [0,2^16)");
+                    throw new IllegalStateException("Offset must be in the range of [0,2^16)");
                 }
-                handler.onRecord(position.getCompressed(), (int)offset);
+                handler.onRecord(position.getCompressed(), (int) offset);
 
                 dataInput.mark(recordLength);
 
                 recordParser.parse(dataInput, handler);
 
                 dataInput.reset();
-                while (recordLength > 0) {
-                    recordLength -= dataInput.skipBytes(recordLength);
-                }
+                skipBytesFully(dataInput, recordLength);
+                recordCount++;
             }
         }
+        log.info("Read {} records", recordCount);
+        return recordCount;
     }
 
     private void assertMagic(DataInput dataInput) throws IOException {
@@ -87,18 +94,20 @@ public class DefaultBamFileReader implements BamFileReader {
 
     private void skipHeaderText(DataInput dataInput) throws IOException {
         int len = dataInput.readInt();
-        while (len > 0 ) {
-            len -= dataInput.skipBytes(len);
-        }
+        skipBytesFully(dataInput, len);
     }
 
     private void skipReferences(DataInput dataInput) throws IOException {
         int refCount = dataInput.readInt();
         for (int i = 0; i < refCount; i++) {
             int len = dataInput.readInt() + 4;
-            while (len > 0) {
-                len -= dataInput.skipBytes(len);
-            }
+            skipBytesFully(dataInput, len);
+        }
+    }
+
+    private void skipBytesFully(DataInput dataInput, int len) throws IOException {
+        while (len > 0) {
+            len -= dataInput.skipBytes(len);
         }
     }
 }

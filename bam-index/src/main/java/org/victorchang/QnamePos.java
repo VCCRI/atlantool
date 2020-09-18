@@ -38,6 +38,7 @@ public class QnamePos implements Comparable<QnamePos> {
                 .add("position=" + PositionPacker.INSTANCE.unpackBlockPos(position))
                 .add("offset=" + PositionPacker.INSTANCE.unpackOffset(position))
                 .add("qname=" + Ascii7Coder.INSTANCE.decode(qname, 0, qname.length))
+                .add("no=" + (qname[qname.length - 1] & 0xff))
                 .toString();
     }
 }

@@ -60,11 +60,14 @@ public class QnameFstBuilder {
             }
             byte[] qname = currentRecord.getQname();
             long position = currentRecord.getPosition();
-            qname[qname.length - 1] = (byte) k;
-            fstBuilder.add(createIntsRef(qname, intsRefBuilder), position);
+            try {
+                fstBuilder.add(createIntsRef(qname, k, intsRefBuilder), position);
+            } catch (AssertionError error) {
+                throw new RuntimeException(error);
+            }
             previousRecord = currentRecord;
             recordCount++;
-            if (recordCount >= maxRecordCount) {
+            if (k == 0 && recordCount >= maxRecordCount) {
                 flush();
             }
         } catch (IOException e) {
@@ -99,11 +102,12 @@ public class QnameFstBuilder {
         return path;
     }
 
-    private IntsRef createIntsRef(byte[] bytes, IntsRefBuilder intsRefBuilder) {
+    private IntsRef createIntsRef(byte[] bytes, int k, IntsRefBuilder intsRefBuilder) {
         intsRefBuilder.clear();
-        for (byte b : bytes) {
-            intsRefBuilder.append(b & 0xff);
+        for (int i = 0; i < bytes.length - 1; i++) {
+            intsRefBuilder.append(bytes[i] & 0xff);
         }
+        intsRefBuilder.append(k);
         return intsRefBuilder.get();
     }
 }

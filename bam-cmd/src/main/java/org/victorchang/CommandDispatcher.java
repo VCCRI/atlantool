@@ -49,9 +49,9 @@ public class CommandDispatcher {
 
             BamRecordReader bamRecordReader = new DefaultBamRecordReader(new DefaultBamRecordParser());
             QnamePosReader qnamePosReader = new QnamePosReader();
-            QnameSearcher searcher = new QnameSearcher(qnamePosReader, indexFolder, bamRecordReader, bamFile);
+            QnameSearcher searcher = new QnameSearcher(qnamePosReader, bamRecordReader);
 
-            searcher.search(qname);
+            searcher.search(bamFile, indexFolder, qname);
 
             long finish = System.nanoTime();
 
