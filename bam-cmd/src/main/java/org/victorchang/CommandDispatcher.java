@@ -11,6 +11,7 @@ import java.nio.file.Paths;
 public class CommandDispatcher {
     private static final Logger log = LoggerFactory.getLogger(CommandDispatcher.class);
 
+    private static final int MAX_THREAD = 4;
     private static final int MAX_RECORD = 500_000;
 
     public static void main(String[] args) throws IOException {
@@ -27,7 +28,11 @@ public class CommandDispatcher {
             Path indexFolder = getIndexFolder(args[2]);
 
             BamFileReader fileReader = new DefaultBamFileReader(new DefaultBamRecordParser());
-            QnameIndexer indexer = new QnameIndexer(fileReader, new QnamePosWriter(), new QnamePosReader(), MAX_RECORD);
+            QnameIndexer indexer = new QnameIndexer(fileReader,
+                    new QnamePosWriter(),
+                    new QnamePosReader(),
+                    MAX_THREAD,
+                    MAX_RECORD);
 
             long start = System.nanoTime();
             indexer.createIndex(indexFolder, bamFile);

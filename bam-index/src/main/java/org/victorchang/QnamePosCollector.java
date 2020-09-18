@@ -1,23 +1,36 @@
 package org.victorchang;
 
-import java.util.Arrays;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 public class QnamePosCollector implements BamRecordHandler {
+    private static final Logger log = LoggerFactory.getLogger(QnamePosCollector.class);
 
     private final QnamePosFlusher flusher;
 
-    private final int maxRecord;
-    private final QnamePos[] buffer;
-    private int recordCount;
+    private final QnamePosBufferPool bufferPool;
+    private final ExecutorService executorService;
+    private final List<Future<Integer>> pendingTasks;
+
+    private QnamePosBuffer currentBuffer;
 
     private long blockPos;
     private int offset;
 
-    public QnamePosCollector(QnamePosFlusher flusher, int maxRecord) {
+
+    public QnamePosCollector(QnamePosBufferPool bufferPool, ExecutorService executorService, QnamePosFlusher flusher) {
+        this.bufferPool = bufferPool;
+        this.executorService = executorService;
         this.flusher = flusher;
-        this.maxRecord = maxRecord;
-        this.buffer = new QnamePos[maxRecord];
-        this.recordCount = 0;
+
+        currentBuffer = bufferPool.getBuffer();
+        pendingTasks = new ArrayList<>();
     }
 
     @Override
@@ -28,22 +41,37 @@ public class QnamePosCollector implements BamRecordHandler {
 
     @Override
     public void onQname(byte[] qnameBuffer, int qnameLen) {
-        this.buffer[recordCount++] = new QnamePos(blockPos, offset, qnameBuffer, qnameLen);
-
-        if (recordCount >= maxRecord) {
+        if (currentBuffer.size() >= currentBuffer.capacity()) {
             flush();
         }
+        currentBuffer.add(new QnamePos(blockPos, offset, qnameBuffer, qnameLen));
     }
 
     @Override
     public void onSequence(byte[] seqBuffer, int seqLen) {
     }
 
-    public void flush() {
-        if (recordCount > 0) {
-            flusher.flush(buffer, recordCount);
-            Arrays.fill(buffer, null);
-            recordCount = 0;
+    private void flush() {
+        QnamePosBuffer busyBuffer = currentBuffer;
+        currentBuffer = bufferPool.getBuffer();
+        Future<Integer> flushingTask = executorService.submit(() -> {
+            flusher.flush(busyBuffer);
+            busyBuffer.release();
+            return busyBuffer.size();
+        });
+        pendingTasks.add(flushingTask);
+    }
+
+    public void await() {
+        if (currentBuffer.size() > 0) {
+            flush();
+        }
+        for (Future<Integer> task : pendingTasks) {
+            try {
+                task.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 }

@@ -11,84 +11,114 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 public class QnameFstBuilder {
     private static final Logger log = LoggerFactory.getLogger(QnameFstBuilder.class);
 
-    private final Path folder;
-    private int fileCount;
+    private final QnamePosBufferPool bufferPool;
+    private final ExecutorService executorService;
+    private final List<Future<Integer>> pendingTasks;
+    private final FileStore indexStore;
 
-    private final int maxRecordCount;
-    private int recordCount;
+    private QnamePosBuffer currentBuffer;
 
-    private final IntsRefBuilder intsRefBuilder;
-    private Builder<Long> fstBuilder;
+    private final byte[] previousQname;
+    private int previousLen;
 
     private QnamePos startRecord;
-
-    private QnamePos previousRecord;
-    private int k;
+    private int occurrence;
 
     private final List<QnamePos> qnameRanges;
 
-    public QnameFstBuilder(Path folder, int maxRecordCount) {
-        this.folder = folder;
-        this.maxRecordCount = maxRecordCount;
+    public QnameFstBuilder(QnamePosBufferPool bufferPool, ExecutorService executorService, FileStore fstStore) {
+        this.bufferPool = bufferPool;
+        this.executorService = executorService;
+        this.indexStore = fstStore;
 
-        fileCount = 0;
-        recordCount = 0;
-
-        fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1, PositiveIntOutputs.getSingleton());
-        intsRefBuilder = new IntsRefBuilder();
-
+        currentBuffer = bufferPool.getBuffer();
+        pendingTasks = new ArrayList<>();
         qnameRanges = new ArrayList<>();
+        previousQname = new byte[256];
     }
 
-    public void add(QnamePos currentRecord) {
+    public void build(Iterator<QnamePos> merged) {
+        while (merged.hasNext()) {
+            QnamePos qnamePos = merged.next();
+            add(qnamePos);
+        }
+    }
+
+    private void add(QnamePos currentRecord) {
         if (startRecord == null) {
             startRecord = currentRecord;
         }
-        try {
-            if (previousRecord != null && currentRecord.compareTo(previousRecord) == 0) {
-                k++; // duplicated key
-            } else {
-                k = 0;
-            }
-            if (k > 255) {
-                throw new IllegalStateException("There is more than 256 records with the same qname");
-            }
-            byte[] qname = currentRecord.getQname();
-            long position = currentRecord.getPosition();
-            try {
-                fstBuilder.add(createIntsRef(qname, k, intsRefBuilder), position);
-            } catch (AssertionError error) {
-                throw new RuntimeException(error);
-            }
-            previousRecord = currentRecord;
-            recordCount++;
-            if (k == 0 && recordCount >= maxRecordCount) {
-                flush();
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        if (Arrays.equals(currentRecord.getQname(), 0, currentRecord.getQname().length - 1,
+                previousQname, 0, previousLen)) {
+            occurrence++; // duplicated key
+            currentRecord.setOccurrence(occurrence);
+        } else {
+            occurrence = 0;
+        }
+        if (occurrence > 255) {
+            throw new IllegalStateException("There is more than 256 records with the same qname");
+        }
+
+        previousLen = currentRecord.getQname().length - 1;
+        System.arraycopy(currentRecord.getQname(), 0, previousQname, 0, previousLen);
+        currentBuffer.add(currentRecord);
+
+        if (occurrence == 0 && currentBuffer.size() + 256 >= currentBuffer.capacity()) {
+            flush();
         }
     }
 
-    public void flush() throws IOException {
-        if (recordCount > 0) {
-            Path path = nextFile();
+    public void flush() {
+        QnamePosBuffer busyBuffer = currentBuffer;
+        currentBuffer = bufferPool.getBuffer();
+        log.info("Creating fst starting at {}",
+                Ascii7Coder.INSTANCE.decode(startRecord.getQname(), 0, startRecord.getQname().length));
+        Future<Integer> flushingTask = executorService.submit(() -> {
+            IntsRefBuilder intsRefBuilder = new IntsRefBuilder();
+            Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1, PositiveIntOutputs.getSingleton());
+            busyBuffer.forEach(currentRecord -> {
+                byte[] qname = currentRecord.getQname();
+                long position = currentRecord.getPosition();
+                try {
+                    fstBuilder.add(createIntsRef(qname, intsRefBuilder), position);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+
+            Path path = indexStore.generate();
             FST<Long> fst = fstBuilder.finish();
             fst.save(path);
+            log.info("{} is created", path.toString());
 
-            qnameRanges.add(startRecord);
+            busyBuffer.release();
+            return busyBuffer.size();
+        });
+        pendingTasks.add(flushingTask);
+        qnameRanges.add(startRecord);
+        startRecord = null;
+    }
 
-            log.info("{} is created starting at {}", path.toString(),
-                    Ascii7Coder.INSTANCE.decode(startRecord.getQname(), 0, startRecord.getQname().length));
-
-            recordCount = 0;
-            startRecord = null;
-            fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1, PositiveIntOutputs.getSingleton());
+    public void await() {
+        if (currentBuffer.size() > 0) {
+            flush();
+        }
+        for (Future<Integer> task : pendingTasks) {
+            try {
+                task.get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
         }
     }
 
@@ -96,18 +126,11 @@ public class QnameFstBuilder {
         return qnameRanges;
     }
 
-    private Path nextFile() {
-        Path path = folder.resolve("qname" + fileCount + ".fst");
-        fileCount++;
-        return path;
-    }
-
-    private IntsRef createIntsRef(byte[] bytes, int k, IntsRefBuilder intsRefBuilder) {
+    private IntsRef createIntsRef(byte[] bytes, IntsRefBuilder intsRefBuilder) {
         intsRefBuilder.clear();
-        for (int i = 0; i < bytes.length - 1; i++) {
-            intsRefBuilder.append(bytes[i] & 0xff);
+        for (byte b : bytes) {
+            intsRefBuilder.append(b & 0xff);
         }
-        intsRefBuilder.append(k);
         return intsRefBuilder.get();
     }
 }

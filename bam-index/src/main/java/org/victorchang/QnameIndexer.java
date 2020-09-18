@@ -3,10 +3,11 @@ package org.victorchang;
 import com.google.common.collect.Iterators;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.BaseStream;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -17,14 +18,25 @@ public class QnameIndexer {
     private final QnamePosReader qnamePosReader;
     private final int maxRecord;
 
+    private final int threadCount;
+
+    private final ExecutorService executorService;
+    private final  QnamePosBufferPool bufferPool;
+
+
     public QnameIndexer(BamFileReader bamFileReader,
                         QnamePosWriter qnamePosWriter,
                         QnamePosReader qnamePosReader,
+                        int threadCount,
                         int maxRecord) {
         this.bamFileReader = bamFileReader;
         this.qnamePosWriter = qnamePosWriter;
         this.qnamePosReader = qnamePosReader;
+        this.threadCount = threadCount;
         this.maxRecord = maxRecord;
+
+        executorService = Executors.newFixedThreadPool(threadCount);
+        bufferPool = new QnamePosBufferPool(threadCount, maxRecord);
     }
 
     public long createIndex(Path indexFolder, Path bamFile) throws IOException {
@@ -33,18 +45,15 @@ public class QnameIndexer {
 
     @SuppressWarnings("UnstableApiUsage")
     public long createIndex(Path indexFolder, Path bamFile, long limit) throws IOException {
-        SortedQnameFileFactory qnameFileFactory = new SortedQnameFileFactory(indexFolder, qnamePosWriter);
 
-        QnamePosCollector collector = new QnamePosCollector(qnameFileFactory::create, maxRecord);
+        FileStore qnameStore = new DefaultFileStore(indexFolder, "qname", "sorted");
+        SortedQnameFileFactory qnameFileFactory = new SortedQnameFileFactory(qnameStore, qnamePosWriter);
+
+        QnamePosCollector collector = new QnamePosCollector(bufferPool, executorService, qnameFileFactory::create);
         long recordCount = bamFileReader.read(bamFile, collector, limit);
-        collector.flush();
+        collector.await();
 
-        List<Path> files = Files.list(indexFolder)
-                .filter(this::isSortedQname)
-                .filter(Files::isRegularFile)
-                .collect(Collectors.toList());
-
-        List<Stream<QnamePos>> sorted = files.stream()
+        List<Stream<QnamePos>> sorted = qnameStore.list().stream()
                 .map(qnamePosReader::read)
                 .collect(Collectors.toList());
 
@@ -52,28 +61,23 @@ public class QnameIndexer {
                 .map(BaseStream::iterator)
                 .collect(Collectors.toList()), QnamePos::compareTo);
 
-        QnameFstBuilder fstBuilder = new QnameFstBuilder(indexFolder, maxRecord);
-        while (merged.hasNext()) {
-            QnamePos qnamePos = merged.next();
-            fstBuilder.add(qnamePos);
-        }
-        fstBuilder.flush();
+        FileStore fstStore = new DefaultFileStore(indexFolder, "qname", "fst");
+        QnameFstBuilder fstBuilder = new QnameFstBuilder(bufferPool, executorService, fstStore);
+        fstBuilder.build(merged);
+        fstBuilder.await();
 
         Path rangesPath = indexFolder.resolve("ranges.sorted");
         List<QnamePos> ranges = fstBuilder.getQnameRanges();
-        qnamePosWriter.create(rangesPath, ranges.toArray(new QnamePos[0]), ranges.size());
+        QnamePosBuffer rangesBuffer = bufferPool.getBuffer();
+        for (QnamePos x : ranges) {
+            rangesBuffer.add(x);
+        }
+        qnamePosWriter.create(rangesPath, rangesBuffer);
 
         sorted.forEach(BaseStream::close);
 
-        for (Path path : files) {
-            Files.delete(path);
-        }
+        qnameStore.deleteAll();
 
         return recordCount;
-    }
-
-    private boolean isSortedQname(Path path) {
-        return path.getFileName().toString().startsWith("qname") &&
-                path.getFileName().toString().endsWith(".sorted");
     }
 }

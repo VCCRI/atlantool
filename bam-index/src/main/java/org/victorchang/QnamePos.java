@@ -32,6 +32,10 @@ public class QnamePos implements Comparable<QnamePos> {
         return Arrays.compareUnsigned(this.qname, that.qname);
     }
 
+    public void setOccurrence(int k) {
+        qname[qname.length - 1] = (byte)k;
+    }
+
     @Override
     public String toString() {
         return new StringJoiner(", ")
