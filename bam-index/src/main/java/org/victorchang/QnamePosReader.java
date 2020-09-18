@@ -12,6 +12,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
 
 import static java.nio.file.StandardOpenOption.READ;
 
@@ -29,14 +30,15 @@ public class QnamePosReader {
 
     @SuppressWarnings("UnstableApiUsage")
     public Stream<QnamePos> read(Path path) {
-        FileChannel fileChannel;
+        InputStream gzipInputStream;
         try {
-            fileChannel = FileChannel.open(path, READ);
+            FileChannel fileChannel = FileChannel.open(path, READ);
+            gzipInputStream = new GZIPInputStream(Channels.newInputStream(fileChannel));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
-        InputStream inputStream = new BufferedInputStream(Channels.newInputStream(fileChannel), FILE_BUFF_SIZE);
+        InputStream inputStream = new BufferedInputStream(gzipInputStream, FILE_BUFF_SIZE);
         LittleEndianDataInputStream dataInput = new LittleEndianDataInputStream(inputStream);
 
         Iterator<QnamePos> iterator = new Iterator<>() {

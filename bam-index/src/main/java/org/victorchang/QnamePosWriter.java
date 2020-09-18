@@ -6,6 +6,7 @@ import java.io.OutputStream;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
+import java.util.zip.GZIPOutputStream;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
@@ -25,7 +26,8 @@ public class QnamePosWriter {
 
     public Path create(Path path, QnamePos[] buffer, int recordCount) {
         try (FileChannel fileChannel = FileChannel.open(path, CREATE, WRITE, TRUNCATE_EXISTING)) {
-            OutputStream outputStream = new BufferedOutputStream(Channels.newOutputStream(fileChannel), FILE_BUFF_SIZE);
+            OutputStream gzipOutputStream = new GZIPOutputStream(Channels.newOutputStream(fileChannel));
+            OutputStream outputStream = new BufferedOutputStream(gzipOutputStream, FILE_BUFF_SIZE);
             for (int i = 0; i < recordCount; i++) {
                 QnamePos current = buffer[i];
                 byte[] qnameBuff = current.getQname();
