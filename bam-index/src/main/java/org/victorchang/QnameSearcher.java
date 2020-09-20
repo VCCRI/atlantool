@@ -1,89 +1,71 @@
 package org.victorchang;
 
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.fst.FST;
-import org.apache.lucene.util.fst.PositiveIntOutputs;
-import org.apache.lucene.util.fst.Util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.Arrays;
+
+import static java.nio.file.StandardOpenOption.READ;
 
 public class QnameSearcher implements BamRecordHandler {
     private static final Logger log = LoggerFactory.getLogger(QnameIndexer.class);
 
-    private final QnamePosReader qnamePosReader;
+    private final KeyPointerReader keyPointerReader;
     private final BamRecordReader recordReader;
 
-    private final Map<Path, FST<Long>> fstCache;
-
-    public QnameSearcher(QnamePosReader qnamePosReader, BamRecordReader recordReader) {
-        this.qnamePosReader = qnamePosReader;
+    public QnameSearcher(KeyPointerReader keyPointerReader, BamRecordReader recordReader) {
+        this.keyPointerReader = keyPointerReader;
         this.recordReader = recordReader;
-        fstCache = new HashMap<>();
     }
 
-    public int search(Path bamFile, Path indexFolder, String qname) {
-        Path rangesPath = indexFolder.resolve("ranges.sorted");
-
-        TreeMap<QnamePos, Path> indexFiles = new TreeMap<>();
-
-        int fileCount = 0;
-        Iterable<QnamePos> ranges = () -> qnamePosReader.read(rangesPath).iterator();
-        for (QnamePos start : ranges) {
-            indexFiles.put(start, indexFolder.resolve("qname" + fileCount + ".fst"));
-            fileCount++;
-        }
+    @SuppressWarnings("UnstableApiUsage")
+    public int search(Path bamFile, Path indexFolder, String qname) throws IOException {
+        Path pathLevel1 = indexFolder.resolve("qname.1");
+        FileChannel channelLevel1 = FileChannel.open(pathLevel1, READ);
+        InputStream inputStreamLevel1 = Channels.newInputStream(channelLevel1);
 
         byte[] input = Ascii7Coder.INSTANCE.encode(qname);
+        Iterable<KeyPointer> indexLevel1 = () -> keyPointerReader.read(inputStreamLevel1).iterator();
+
+        KeyPointer key = new KeyPointer(0, input, input.length);
+        KeyPointer start = key;
+        for (KeyPointer x : indexLevel1) {
+            if (x.compareTo(key) > 0) {
+                break;
+            }
+            start = x;
+        }
+        inputStreamLevel1.close();
+
+        Path pathLevel0 = indexFolder.resolve("qname.0");
+        FileChannel channelLevel0 = FileChannel.open(pathLevel0, READ);
+        long coffset = PointerPacker.INSTANCE.unpackCompressedOffset(start.getPointer());
+        int uoffset = PointerPacker.INSTANCE.unpackUnCompressedOffset(start.getPointer());
+
+        channelLevel0.position(coffset);
+        InputStream inputStreamLevel0 = Channels.newInputStream(channelLevel0);
+
         int found = 0;
-        for (int k = 0; k < 256; k++) {
-            input[input.length - 1] = (byte) k;
-            Map.Entry<QnamePos, Path> from = indexFiles.floorEntry(new QnamePos(0, input, input.length));
-            if (from == null) {
-                break;
-            }
-            if (search(input, bamFile, from.getValue())) {
+        Iterable<KeyPointer> indexLevel0 =  () -> keyPointerReader.read(inputStreamLevel0, uoffset).iterator();
+        for (KeyPointer x : indexLevel0) {
+            if (Arrays.equals(x.getKey(), input)) {
+                log.info("Found record at {}", x);
+                recordReader.read(bamFile, x.getPointer(), this);
                 found++;
-            } else {
+            }
+            if (Arrays.compareUnsigned(x.getKey(), input) > 0) {
                 break;
             }
         }
+
+        inputStreamLevel0.close();
+
         return found;
-    }
-
-    private boolean search(byte[] input, Path bamFile, Path indexFile) {
-        FST<Long> fst = fstCache.computeIfAbsent(indexFile, file -> {
-            log.info("Loading fst from {}", file);
-            try {
-                return FST.read(indexFile, PositiveIntOutputs.getSingleton());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        try {
-            log.info("Searching in {}", indexFile);
-
-            Long value = Util.get(fst, new BytesRef(input));
-
-            if (value != null) {
-                long pos = PositionPacker.INSTANCE.unpackBlockPos(value);
-                int offset = PositionPacker.INSTANCE.unpackOffset(value);
-
-                log.info("Found record at pos {}, offset {}", pos, offset);
-
-                recordReader.read(bamFile, pos, offset, this);
-                return true;
-            }
-
-            return false;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     @Override

@@ -1,8 +1,14 @@
 package org.victorchang;
 
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Streams;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.channels.Channels;
+import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
@@ -12,64 +18,85 @@ import java.util.stream.BaseStream;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.READ;
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
+
 public class QnameIndexer {
+    private static final Logger log = LoggerFactory.getLogger(QnameIndexer.class);
+
     private final BamFileReader bamFileReader;
-    private final QnamePosWriter qnamePosWriter;
-    private final QnamePosReader qnamePosReader;
+    private final KeyPointerWriter keyPointerWriter;
+    private final KeyPointerReader keyPointerReader;
 
     private final ExecutorService executorService;
-    private final  QnamePosBufferPool bufferPool;
+    private final KeyPointerBufferPool bufferPool;
 
     public QnameIndexer(BamFileReader bamFileReader,
-                        QnamePosWriter qnamePosWriter,
-                        QnamePosReader qnamePosReader,
+                        KeyPointerWriter keyPointerWriter,
+                        KeyPointerReader keyPointerReader,
                         int threadCount,
-                        int maxRecord) {
+                        int bufferSize) {
         this.bamFileReader = bamFileReader;
-        this.qnamePosWriter = qnamePosWriter;
-        this.qnamePosReader = qnamePosReader;
+        this.keyPointerWriter = keyPointerWriter;
+        this.keyPointerReader = keyPointerReader;
 
         executorService = Executors.newFixedThreadPool(threadCount);
-        bufferPool = new QnamePosBufferPool(threadCount + 1, maxRecord);
+        bufferPool = new KeyPointerBufferPool(threadCount + 1, bufferSize);
     }
 
-    public long createIndex(Path indexFolder, Path bamFile) throws IOException {
-        return createIndex(indexFolder, bamFile, Long.MAX_VALUE);
+    public long index(Path indexFolder, Path bamFile) throws IOException {
+        return index(indexFolder, bamFile, Long.MAX_VALUE);
     }
 
     @SuppressWarnings("UnstableApiUsage")
-    public long createIndex(Path indexFolder, Path bamFile, long limit) throws IOException {
+    public long index(Path indexFolder, Path bamFile, long limit) throws IOException {
 
-        FileStore qnameStore = new DefaultFileStore(indexFolder, "qname", "sorted");
-        SortedQnameFileFactory qnameFileFactory = new SortedQnameFileFactory(qnameStore, qnamePosWriter);
+        FileStore qnameStore = new DefaultFileStore(indexFolder, "qname", "part");
+        SortedQnameFileFactory qnameFileFactory = new SortedQnameFileFactory(qnameStore, keyPointerWriter);
 
-        QnamePosCollector collector = new QnamePosCollector(bufferPool, executorService, qnameFileFactory::create);
+        QnamePosCollector collector = new QnamePosCollector(bufferPool, executorService, buffer -> {
+            try {
+                qnameFileFactory.create(buffer);
+            } catch (IOException ioException) {
+                throw new RuntimeException(ioException);
+            }
+        });
+
         long recordCount = bamFileReader.read(bamFile, collector, limit);
         collector.await();
 
-        List<Stream<QnamePos>> sorted = qnameStore.list().stream()
-                .map(qnamePosReader::read)
+        List<Stream<KeyPointer>> parts = qnameStore.list().stream()
+                .map(path -> {
+                    InputStream inputStream;
+                    try {
+                        FileChannel fileChannel = FileChannel.open(path, READ);
+                        inputStream = Channels.newInputStream(fileChannel);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                    return keyPointerReader.read(inputStream);
+                })
                 .collect(Collectors.toList());
 
-        Iterator<QnamePos> merged = Iterators.mergeSorted(sorted.stream()
+
+        Iterator<KeyPointer> merged = Iterators.mergeSorted(parts.stream()
                 .map(BaseStream::iterator)
-                .collect(Collectors.toList()), QnamePos::compareTo);
+                .collect(Collectors.toList()), KeyPointer::compareTo);
 
-        FileStore fstStore = new DefaultFileStore(indexFolder, "qname", "fst");
-        QnameFstBuilder fstBuilder = new QnameFstBuilder(bufferPool, executorService, fstStore);
-        fstBuilder.build(merged);
-        fstBuilder.await();
+        Path indexLevel0 = indexFolder.resolve("qname.0");
+        try (FileChannel fileChannel0 = FileChannel.open(indexLevel0, CREATE, WRITE, TRUNCATE_EXISTING)) {
+            List<KeyPointer> metadata = keyPointerWriter.write(Channels.newOutputStream(fileChannel0),
+                    Streams.stream(merged), (int) Math.sqrt(recordCount));
 
-        Path rangesPath = indexFolder.resolve("ranges.sorted");
-        List<QnamePos> ranges = fstBuilder.getQnameRanges();
-        QnamePosBuffer rangesBuffer = bufferPool.getBuffer();
-        for (QnamePos x : ranges) {
-            rangesBuffer.add(x);
+            Path indexLevel1 = indexFolder.resolve("qname.1");
+            try (FileChannel fileChannel1 = FileChannel.open(indexLevel1, CREATE, WRITE, TRUNCATE_EXISTING)) {
+                keyPointerWriter.write(Channels.newOutputStream(fileChannel1), metadata.stream(), metadata.size());
+            }
         }
-        qnamePosWriter.create(rangesPath, rangesBuffer);
-        rangesBuffer.release();
 
-        sorted.forEach(BaseStream::close);
+        parts.forEach(BaseStream::close);
 
         qnameStore.deleteAll();
 

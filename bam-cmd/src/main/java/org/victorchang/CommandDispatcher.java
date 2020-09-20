@@ -12,7 +12,7 @@ public class CommandDispatcher {
     private static final Logger log = LoggerFactory.getLogger(CommandDispatcher.class);
 
     private static final int DEFAULT_THREAD_COUNT = 1;
-    private static final int DEFAULT_MAX_RECORD = 500_000;
+    private static final int DEFAULT_SORT_BUFFER_SIZE = 500_000;
 
     public static void main(String[] args) throws IOException {
         if (args.length < 3 || args.length > 5) {
@@ -31,31 +31,31 @@ public class CommandDispatcher {
                 }
             }
 
-            int maxRecord = DEFAULT_MAX_RECORD;
+            int sortBufferSize = DEFAULT_SORT_BUFFER_SIZE;
             if (args.length > 4) {
                 try {
-                    maxRecord = Integer.parseInt(args[4]);
+                    sortBufferSize = Integer.parseInt(args[4]);
                 } catch (NumberFormatException ignored) {
                 }
             }
 
             BamFileReader fileReader = new DefaultBamFileReader(new DefaultBamRecordParser());
             QnameIndexer indexer = new QnameIndexer(fileReader,
-                    new QnamePosWriter(),
-                    new QnamePosReader(),
+                    new KeyPointerWriter(),
+                    new KeyPointerReader(),
                     threadCount,
-                    maxRecord);
+                    sortBufferSize);
 
-            log.info("Creating index using {} threads with maximum {} records per index file", threadCount, maxRecord);
+            log.info("Creating index using {} threads with sort buffer size of {} records", threadCount, sortBufferSize);
 
             long start = System.nanoTime();
-            indexer.createIndex(indexFolder, bamFile);
+            indexer.index(indexFolder, bamFile);
             long finish = System.nanoTime();
 
             log.info("Create index completed in {}", (finish - start) / 1000_000 + "ms");
 
             indexer.shutDown();
-            
+
             return;
         }
 
@@ -71,7 +71,7 @@ public class CommandDispatcher {
             long start = System.nanoTime();
 
             BamRecordReader bamRecordReader = new DefaultBamRecordReader(new DefaultBamRecordParser());
-            QnamePosReader qnamePosReader = new QnamePosReader();
+            KeyPointerReader qnamePosReader = new KeyPointerReader();
             QnameSearcher searcher = new QnameSearcher(qnamePosReader, bamRecordReader);
 
             searcher.search(bamFile, indexFolder, qname);
@@ -105,7 +105,7 @@ public class CommandDispatcher {
 
     private static void usage() {
         System.err.println("Usage:");
-        System.err.println("\tjava -jar bam-cmd.jar index <bam file> <index directory> [threadCount=1] [maxRecord=500000]");
+        System.err.println("\tjava -jar bam-cmd.jar index <bam file> <index directory> [threadCount=1] [sortBufferSize=500000]");
         System.err.println("\tjava -jar bam-cmd.jar search <bam file> <index directory> <qname>");
         System.exit(-1);
     }

@@ -23,20 +23,27 @@ public class DefaultBamRecordReader implements BamRecordReader {
 
     @SuppressWarnings("UnstableApiUsage")
     @Override
-    public void read(Path bamFile, long blockPos, int offset, BamRecordHandler recordHandler) throws IOException {
-        try (FileChannel fileChannel = FileChannel.open(bamFile, READ).position(blockPos)) {
+    public void read(Path bamFile, long coffset, int uoffset, BamRecordHandler recordHandler) throws IOException {
+        try (FileChannel fileChannel = FileChannel.open(bamFile, READ).position(coffset)) {
             InputStream compressedStream = new BufferedInputStream(Channels.newInputStream(fileChannel), BUFF_SIZE);
 
             CountingInputStream uncompressedStream = new CountingInputStream(
                     new BufferedInputStream(
-                            new GzipCompressorInputStream(compressedStream, (compressed, uncompressed) -> {}), BUFF_SIZE));
+                            new GzipConcatenatedInputStream(compressedStream, (compressed, uncompressed) -> {}), BUFF_SIZE));
 
             LittleEndianDataInputStream dataInput = new LittleEndianDataInputStream(uncompressedStream);
-            while (offset > 0) {
-                offset -= dataInput.skipBytes(offset);
+            while (uoffset > 0) {
+                uoffset -= dataInput.skipBytes(uoffset);
             }
             dataInput.readInt(); // record length
             recordParser.parse(dataInput, recordHandler);
         }
+    }
+
+    @Override
+    public void read(Path bamFile, long pointer, BamRecordHandler recordHandler) throws IOException {
+        long coffset = PointerPacker.INSTANCE.unpackCompressedOffset(pointer);
+        int uoffset = PointerPacker.INSTANCE.unpackUnCompressedOffset(pointer);
+        read(bamFile, coffset, uoffset, recordHandler);
     }
 }

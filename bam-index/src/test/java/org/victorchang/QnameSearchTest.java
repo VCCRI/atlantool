@@ -26,11 +26,11 @@ public class QnameSearchTest {
     @Before
     public void setUp() {
         BamFileReader fileReader = new DefaultBamFileReader(new DefaultBamRecordParser());
-        indexer = new QnameIndexer(fileReader, new QnamePosWriter(), new QnamePosReader(), MAX_THREAD, MAX_RECORD);
+        indexer = new QnameIndexer(fileReader, new KeyPointerWriter(), new KeyPointerReader(), MAX_THREAD, MAX_RECORD);
 
         BamRecordReader bamRecordReader = new DefaultBamRecordReader(new DefaultBamRecordParser());
-        QnamePosReader qnamePosReader = new QnamePosReader();
-        searcher = new QnameSearcher(qnamePosReader, bamRecordReader);
+        KeyPointerReader keyPointerReader = new KeyPointerReader();
+        searcher = new QnameSearcher(keyPointerReader, bamRecordReader);
     }
 
     @Test
@@ -40,7 +40,7 @@ public class QnameSearchTest {
         Files.createDirectories(indexFolder);
 
         long start = System.nanoTime();
-        long recordCount = indexer.createIndex(indexFolder, bamFile);
+        long recordCount = indexer.index(indexFolder, bamFile);
         long finish = System.nanoTime();
 
         log.info("Create index of {} records completed in {}", recordCount, (finish - start) / 1000_000 + "ms");
@@ -59,7 +59,7 @@ public class QnameSearchTest {
         Files.createDirectories(indexFolder);
 
         long start = System.nanoTime();
-        long recordCount = indexer.createIndex(indexFolder, bamFile, 2_200_000);
+        long recordCount = indexer.index(indexFolder, bamFile, 2_200_000);
         long finish = System.nanoTime();
 
         log.info("Create index of {} records completed in {}", recordCount, (finish - start) / 1000_000 + "ms");

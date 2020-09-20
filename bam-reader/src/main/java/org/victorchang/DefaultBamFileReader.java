@@ -42,7 +42,7 @@ public class DefaultBamFileReader implements BamFileReader {
             GzipEntryPositionFinder positionFinder = new GzipEntryPositionFinder();
             CountingInputStream uncompressedStream = new CountingInputStream(
                     new BufferedInputStream(
-                            new GzipCompressorInputStream(compressedStream, positionFinder), FILE_BUFF_SIZE));
+                            new GzipConcatenatedInputStream(compressedStream, positionFinder), FILE_BUFF_SIZE));
 
             LittleEndianDataInputStream dataInput = new LittleEndianDataInputStream(uncompressedStream);
             assertMagic(dataInput);
@@ -63,12 +63,12 @@ public class DefaultBamFileReader implements BamFileReader {
                     throw new IllegalStateException("Can't find start of a gzip entry");
                 }
 
-                long offset = uncompressedStream.getBytesRead() - position.getUncompressed() - 4;
+                long uoffset = uncompressedStream.getBytesRead() - position.getUncompressed() - 4;
 
-                if (offset < 0 || offset >= (1 << 16)) {
+                if (uoffset < 0 || uoffset >= (1 << 16)) {
                     throw new IllegalStateException("Offset must be in the range of [0,2^16)");
                 }
-                handler.onRecord(position.getCompressed(), (int) offset);
+                handler.onRecord(position.getCompressed(), (int) uoffset);
 
                 dataInput.mark(recordLength);
 

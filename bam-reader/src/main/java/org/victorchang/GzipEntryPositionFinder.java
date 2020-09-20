@@ -2,11 +2,9 @@ package org.victorchang;
 
 public class GzipEntryPositionFinder implements GzipEntryEventHandler {
     private GzipEntryPosition tail;
-    private int entryCount;
 
     public GzipEntryPositionFinder() {
         tail = null;
-        entryCount = 0;
     }
 
     public GzipEntryPosition find(long uncompressed) {
@@ -23,10 +21,5 @@ public class GzipEntryPositionFinder implements GzipEntryEventHandler {
     @Override
     public void onStart(long compressedCount, long uncompressedCount) {
         tail = new GzipEntryPosition(tail, compressedCount, uncompressedCount);
-        entryCount++;
-    }
-
-    public int getEntryCount() {
-        return entryCount;
     }
 }

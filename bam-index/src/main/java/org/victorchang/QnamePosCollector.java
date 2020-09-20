@@ -14,16 +14,16 @@ public class QnamePosCollector implements BamRecordHandler {
 
     private final QnamePosFlusher flusher;
 
-    private final QnamePosBufferPool bufferPool;
+    private final KeyPointerBufferPool bufferPool;
     private final ExecutorService executorService;
     private final List<Future<Integer>> pendingTasks;
 
-    private QnamePosBuffer currentBuffer;
+    private KeyPointerBuffer currentBuffer;
 
     private long blockPos;
     private int offset;
 
-    public QnamePosCollector(QnamePosBufferPool bufferPool, ExecutorService executorService, QnamePosFlusher flusher) {
+    public QnamePosCollector(KeyPointerBufferPool bufferPool, ExecutorService executorService, QnamePosFlusher flusher) {
         this.bufferPool = bufferPool;
         this.executorService = executorService;
         this.flusher = flusher;
@@ -43,7 +43,7 @@ public class QnamePosCollector implements BamRecordHandler {
         if (currentBuffer.size() >= currentBuffer.capacity()) {
             flush();
         }
-        currentBuffer.add(new QnamePos(blockPos, offset, qnameBuffer, qnameLen));
+        currentBuffer.add(new KeyPointer(blockPos, offset, qnameBuffer, qnameLen));
     }
 
     @Override
@@ -51,7 +51,7 @@ public class QnamePosCollector implements BamRecordHandler {
     }
 
     private void flush() {
-        QnamePosBuffer busyBuffer = currentBuffer;
+        KeyPointerBuffer busyBuffer = currentBuffer;
         currentBuffer = bufferPool.getBuffer();
         Future<Integer> flushingTask = executorService.submit(() -> {
             flusher.flush(busyBuffer);

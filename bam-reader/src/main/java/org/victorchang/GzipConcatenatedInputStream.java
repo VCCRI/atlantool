@@ -23,7 +23,7 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-public class GzipCompressorInputStream extends CompressorInputStream implements InputStreamStatistics {
+public class GzipConcatenatedInputStream extends CompressorInputStream implements InputStreamStatistics {
 
     // Header flags
     // private static final int FTEXT = 0x01; // Uninteresting for us
@@ -64,8 +64,8 @@ public class GzipCompressorInputStream extends CompressorInputStream implements 
     /**
      * Constructs a new input stream that decompresses concatenated gzip-compressed data with event handler.
      */
-    public GzipCompressorInputStream(final InputStream inputStream,
-                                     final GzipEntryEventHandler eventHandler)
+    public GzipConcatenatedInputStream(final InputStream inputStream,
+                                       final GzipEntryEventHandler eventHandler)
             throws IOException {
         this.eventHandler = eventHandler;
         if (inputStream.markSupported()) {
@@ -83,7 +83,8 @@ public class GzipCompressorInputStream extends CompressorInputStream implements 
     }
 
     private boolean init(final boolean isFirstMember) throws IOException {
-        eventHandler.onStart(getCompressedCount(), getUncompressedCount());
+        long compressedCount = getCompressedCount();
+        long uncompressedCount = getUncompressedCount();
 
         // Check the magic bytes without a possibility of EOFException.
         final int magic0 = in.read();
@@ -93,6 +94,8 @@ public class GzipCompressorInputStream extends CompressorInputStream implements 
         if (magic0 == -1 && !isFirstMember) {
             return false;
         }
+
+        eventHandler.onStart(compressedCount, uncompressedCount);
 
         if (magic0 != 31 || in.read() != 139) {
             throw new IOException(isFirstMember
