@@ -20,8 +20,8 @@ public class QnamePosCollector implements BamRecordHandler {
 
     private KeyPointerBuffer currentBuffer;
 
-    private long blockPos;
-    private int offset;
+    private long coffset;
+    private int uoffset;
 
     public QnamePosCollector(KeyPointerBufferPool bufferPool, ExecutorService executorService, QnamePosFlusher flusher) {
         this.bufferPool = bufferPool;
@@ -34,8 +34,8 @@ public class QnamePosCollector implements BamRecordHandler {
 
     @Override
     public void onRecord(long blockPos, int offset) {
-        this.blockPos = blockPos;
-        this.offset = offset;
+        this.coffset = blockPos;
+        this.uoffset = offset;
     }
 
     @Override
@@ -43,7 +43,7 @@ public class QnamePosCollector implements BamRecordHandler {
         if (currentBuffer.size() >= currentBuffer.capacity()) {
             flush();
         }
-        currentBuffer.add(new KeyPointer(blockPos, offset, qnameBuffer, qnameLen));
+        currentBuffer.add(new KeyPointer(coffset, uoffset, qnameBuffer, qnameLen));
     }
 
     @Override

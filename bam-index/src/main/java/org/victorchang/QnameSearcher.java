@@ -23,7 +23,6 @@ public class QnameSearcher implements BamRecordHandler {
         this.recordReader = recordReader;
     }
 
-    @SuppressWarnings("UnstableApiUsage")
     public int search(Path bamFile, Path indexFolder, String qname) throws IOException {
         Path pathLevel1 = indexFolder.resolve("qname.1");
         FileChannel channelLevel1 = FileChannel.open(pathLevel1, READ);
