@@ -94,6 +94,7 @@ public class QnameIndexer {
             try (FileChannel fileChannel1 = FileChannel.open(indexLevel1, CREATE, WRITE, TRUNCATE_EXISTING)) {
                 keyPointerWriter.write(Channels.newOutputStream(fileChannel1), metadata.stream(), metadata.size());
             }
+            metadata.stream().forEach(x -> log.info("{}", x));
         }
 
         parts.forEach(BaseStream::close);

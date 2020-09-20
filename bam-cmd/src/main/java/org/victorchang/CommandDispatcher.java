@@ -118,7 +118,7 @@ public class CommandDispatcher {
 
     private static void usage() {
         System.err.println("Usage:");
-        System.err.println("\tjava -jar bam-cmd.jar index <bam file> <index directory> [threadCount=1] [sortBufferSize=500000]");
+        System.err.println("\tjava -jar bam-cmd.jar index <bam file> <index directory> [threadCount=1] [sortBufferSize=500000] [bytesLimit]");
         System.err.println("\tjava -jar bam-cmd.jar search <bam file> <index directory> <qname>");
         System.exit(-1);
     }
