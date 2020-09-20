@@ -15,7 +15,7 @@ public class CommandDispatcher {
     private static final int DEFAULT_SORT_BUFFER_SIZE = 500_000;
 
     public static void main(String[] args) throws IOException {
-        if (args.length < 3 || args.length > 5) {
+        if (args.length < 3) {
             usage();
         }
 
@@ -39,22 +39,35 @@ public class CommandDispatcher {
                 }
             }
 
+            long bytesLimit = Long.MAX_VALUE;
+            if (args.length > 5) {
+                try {
+                    bytesLimit = Long.parseLong(args[5]);
+                } catch (NumberFormatException ignored) {
+                }
+            }
+
             BamFileReader fileReader = new DefaultBamFileReader(new DefaultBamRecordParser());
             QnameIndexer indexer = new QnameIndexer(fileReader,
                     new KeyPointerWriter(),
                     new KeyPointerReader(),
                     threadCount,
                     sortBufferSize);
+            try {
+                log.info("Creating index {} using {} threads with sort buffer size of {} records",
+                        bytesLimit == Long.MAX_VALUE ? "" : "for the first " + bytesLimit + " bytes",
+                        threadCount,
+                        sortBufferSize);
 
-            log.info("Creating index using {} threads with sort buffer size of {} records", threadCount, sortBufferSize);
+                long start = System.nanoTime();
+                indexer.index(indexFolder, bamFile, bytesLimit);
+                long finish = System.nanoTime();
 
-            long start = System.nanoTime();
-            indexer.index(indexFolder, bamFile);
-            long finish = System.nanoTime();
+                log.info("Create index completed in {}", (finish - start) / 1000_000 + "ms");
 
-            log.info("Create index completed in {}", (finish - start) / 1000_000 + "ms");
-
-            indexer.shutDown();
+            } finally {
+                indexer.shutDown();
+            }
 
             return;
         }

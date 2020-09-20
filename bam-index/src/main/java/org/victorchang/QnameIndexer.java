@@ -51,7 +51,7 @@ public class QnameIndexer {
     }
 
     @SuppressWarnings("UnstableApiUsage")
-    public long index(Path indexFolder, Path bamFile, long limit) throws IOException {
+    public long index(Path indexFolder, Path bamFile, long bytesLimit) throws IOException {
 
         FileStore qnameStore = new DefaultFileStore(indexFolder, "qname", "part");
         SortedQnameFileFactory qnameFileFactory = new SortedQnameFileFactory(qnameStore, keyPointerWriter);
@@ -64,7 +64,7 @@ public class QnameIndexer {
             }
         });
 
-        long recordCount = bamFileReader.read(bamFile, collector, limit);
+        long recordCount = bamFileReader.read(bamFile, collector, bytesLimit);
         collector.await();
 
         List<Stream<KeyPointer>> parts = qnameStore.list().stream()

@@ -34,7 +34,7 @@ public class DefaultBamFileReader implements BamFileReader {
 
     @SuppressWarnings("UnstableApiUsage")
     @Override
-    public long read(Path bamFile, BamRecordHandler handler, long limit) throws IOException {
+    public long read(Path bamFile, BamRecordHandler handler, long bytesLimit) throws IOException {
         long recordCount = 0;
         try (FileChannel fileChannel = FileChannel.open(bamFile, READ)) {
             InputStream compressedStream = new BufferedInputStream(Channels.newInputStream(fileChannel), FILE_BUFF_SIZE);
@@ -49,7 +49,7 @@ public class DefaultBamFileReader implements BamFileReader {
             skipHeaderText(dataInput);
             skipReferences(dataInput);
 
-            while (recordCount < limit) {
+            while (true) {
                 int recordLength;
                 try {
                     recordLength = dataInput.readInt();
@@ -61,6 +61,11 @@ public class DefaultBamFileReader implements BamFileReader {
 
                 if (position == null) {
                     throw new IllegalStateException("Can't find start of a gzip entry");
+                }
+
+                if (position.getCompressed() >= bytesLimit) {
+                    log.info("Reach {} bytes limit, skip the rest the file", bytesLimit);
+                    break;
                 }
 
                 long uoffset = uncompressedStream.getBytesRead() - position.getUncompressed() - 4;

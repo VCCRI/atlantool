@@ -59,7 +59,7 @@ public class QnameSearchTest {
         Files.createDirectories(indexFolder);
 
         long start = System.nanoTime();
-        long recordCount = indexer.index(indexFolder, bamFile, 2_200_000);
+        long recordCount = indexer.index(indexFolder, bamFile, 256_000_000);
         long finish = System.nanoTime();
 
         log.info("Create index of {} records completed in {}", recordCount, (finish - start) / 1000_000 + "ms");
@@ -69,5 +69,8 @@ public class QnameSearchTest {
 
         found = searcher.search(bamFile, indexFolder, "E00431:98:HCK73ALXX:7:1219:22516:60782");
         assertThat(found, equalTo(3));
+
+        found = searcher.search(bamFile, indexFolder, "SOLEXA-1GA-1_1_FC20EMA:7:233:258:501");
+        assertThat(found, equalTo(0));
     }
 }

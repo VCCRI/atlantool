@@ -46,6 +46,9 @@ public class QnameSearcher implements BamRecordHandler {
         long coffset = PointerPacker.INSTANCE.unpackCompressedOffset(start.getPointer());
         int uoffset = PointerPacker.INSTANCE.unpackUnCompressedOffset(start.getPointer());
 
+        if (coffset >= channelLevel0.size()) {
+            return 0;
+        }
         channelLevel0.position(coffset);
         InputStream inputStreamLevel0 = Channels.newInputStream(channelLevel0);
 
