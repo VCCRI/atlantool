@@ -52,25 +52,4 @@ public class QnameSearchTest {
         assertThat(found, equalTo(2));
     }
 
-    @Test
-    public void search256MTest() throws IOException, URISyntaxException {
-        Path bamFile = Paths.get(ClassLoader.getSystemResource("bam/256M.bam").toURI());
-        Path indexFolder = Paths.get("bam/256M.bam");
-        Files.createDirectories(indexFolder);
-
-        long start = System.nanoTime();
-        long recordCount = indexer.index(indexFolder, bamFile, 256_000_000);
-        long finish = System.nanoTime();
-
-        log.info("Create index of {} records completed in {}", recordCount, (finish - start) / 1000_000 + "ms");
-
-        int found = searcher.search(bamFile, indexFolder, "E00431:98:HCK73ALXX:7:1101:10003:27785");
-        assertThat(found, equalTo(2));
-
-        found = searcher.search(bamFile, indexFolder, "E00431:98:HCK73ALXX:7:1219:22516:60782");
-        assertThat(found, equalTo(3));
-
-        found = searcher.search(bamFile, indexFolder, "SOLEXA-1GA-1_1_FC20EMA:7:233:258:501");
-        assertThat(found, equalTo(0));
-    }
 }
