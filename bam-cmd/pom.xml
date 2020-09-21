@@ -32,6 +32,11 @@
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>4.5.1</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -45,7 +50,7 @@
                     </descriptorRefs>
                     <archive>
                         <manifest>
-                            <mainClass>org.victorchang.CommandDispatcher</mainClass>
+                            <mainClass>org.victorchang.QnameCommand</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
