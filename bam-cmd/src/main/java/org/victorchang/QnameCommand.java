@@ -37,9 +37,9 @@ class IndexCommand implements Callable<Integer> {
     private static final int DEFAULT_THREAD_COUNT = 1;
     private static final int DEFAULT_SORT_BUFFER_SIZE = 500_000;
 
-    @Parameters(paramLabel = "bam-file", description = "path to bam file")
+    @Parameters(paramLabel = "bam-file", description = "Path to the bam file")
     Path bamPath;
-    @Parameters(paramLabel = "index-path", description = "directory to store index file")
+    @Parameters(paramLabel = "index-path", description = "Directory to store index file")
     Path indexDirectory;
     @Option(names = "--thread-count", description = "No.of threads to use", defaultValue = "1")
     int threadCount;
@@ -85,9 +85,9 @@ class IndexCommand implements Callable<Integer> {
 
 @Command(name = "view")
 class ViewCommand implements Callable<Integer> {
-    @Parameters(paramLabel = "bam-file", description = "path to bam file")
+    @Parameters(paramLabel = "bam-file", description = "Path to the bam file")
     Path bamPath;
-    @Parameters(paramLabel = "index-path", description = "directory to store index file")
+    @Parameters(paramLabel = "index-path", description = "Directory to store index file")
     Path indexPath;
     @Parameters(paramLabel = "qname", description = "Qname to search for")
     String qname;
