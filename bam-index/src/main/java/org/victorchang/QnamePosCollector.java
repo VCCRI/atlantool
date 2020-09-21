@@ -54,9 +54,15 @@ public class QnamePosCollector implements BamRecordHandler {
         KeyPointerBuffer busyBuffer = currentBuffer;
         currentBuffer = bufferPool.getBuffer();
         Future<Integer> flushingTask = executorService.submit(() -> {
-            flusher.flush(busyBuffer);
-            busyBuffer.release();
-            return busyBuffer.size();
+            try {
+                flusher.flush(busyBuffer);
+                busyBuffer.release();
+                return busyBuffer.size();
+            } catch (Throwable e) {
+                log.error("Error when flushing", e);
+                System.exit(-1);
+            }
+            return 0;
         });
         pendingTasks.add(flushingTask);
     }

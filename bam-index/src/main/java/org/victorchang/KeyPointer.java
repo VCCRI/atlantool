@@ -56,7 +56,7 @@ public class KeyPointer implements Comparable<KeyPointer> {
     public String toString() {
         return new StringJoiner(", ")
                 .add("coffset=" + PointerPacker.INSTANCE.unpackCompressedOffset(pointer))
-                .add("voffset=" + PointerPacker.INSTANCE.unpackUnCompressedOffset(pointer))
+                .add("uoffset=" + PointerPacker.INSTANCE.unpackUnCompressedOffset(pointer))
                 .add("key=" + Ascii7Coder.INSTANCE.decode(key, 0, key.length))
                 .toString();
     }

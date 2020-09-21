@@ -54,7 +54,7 @@ public class DefaultBamRecordParser implements BamRecordParser {
     private void readSeq(DataInput dataInput, int seqLength) throws IOException {
         int byteLen = (seqLength + 1) / 2;
         // we can't make any assumption on sequence length so grow the buffer if it is required.
-        if (byteLen > seqBuffer.length) {
+        while (byteLen > seqBuffer.length) {
             seqBuffer = new byte[Math.max(seqBuffer.length * 2, byteLen)];
         }
         dataInput.readFully(seqBuffer, 0, byteLen);
