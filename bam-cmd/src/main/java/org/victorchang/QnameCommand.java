@@ -108,6 +108,8 @@ class ViewCommand implements Callable<Integer> {
     Path indexPath;
     @Parameters(paramLabel = "qname", description = "QNAME to search for")
     String qname;
+    @Option(names = "-h", description = "Include header in SAM output", defaultValue = "false")
+    boolean includeHeader;
     @Option(names = "--debug", description = "Switch on debugging output", defaultValue = "false")
     boolean debug;
 
@@ -130,7 +132,7 @@ class ViewCommand implements Callable<Integer> {
 
         BamRecordReader bamRecordReader = new DefaultBamRecordReader(new SamtoolsBasedParser());
         KeyPointerReader qnamePosReader = new KeyPointerReader();
-        SamPrintingHandler handler = new SamPrintingHandler(System.out);
+        SamPrintingHandler handler = new SamPrintingHandler(System.out, includeHeader);
         QnameSearcher searcher = new QnameSearcher(qnamePosReader, bamRecordReader, handler);
 
         searcher.search(bamPath, indexPath, qname);

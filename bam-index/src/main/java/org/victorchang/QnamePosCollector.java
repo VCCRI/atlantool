@@ -1,6 +1,6 @@
 package org.victorchang;
 
-import htsjdk.samtools.BAMRecord;
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +32,10 @@ public class QnamePosCollector implements BamRecordHandler {
 
         currentBuffer = bufferPool.getBuffer();
         pendingTasks = new ArrayList<>();
+    }
+
+    @Override
+    public void onHeader(SAMFileHeader header) {
     }
 
     @Override

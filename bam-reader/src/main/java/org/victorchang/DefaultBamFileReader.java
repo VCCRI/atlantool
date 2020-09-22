@@ -1,19 +1,14 @@
 package org.victorchang;
 
 import com.google.common.io.LittleEndianDataInputStream;
-import htsjdk.samtools.BAMFileReader;
-import htsjdk.samtools.DefaultSAMRecordFactory;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.util.zip.InflaterFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.DataInput;
 import java.io.EOFException;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.Channels;
@@ -43,6 +38,7 @@ public class DefaultBamFileReader implements BamFileReader {
     @Override
     public long read(Path bamFile, BamRecordHandler handler, long bytesLimit) throws IOException {
         final SAMFileHeader header = readSamHeader(bamFile);
+        handler.onHeader(header);
         long recordCount = 0;
         try (FileChannel fileChannel = FileChannel.open(bamFile, READ)) {
             InputStream compressedStream = new BufferedInputStream(Channels.newInputStream(fileChannel), FILE_BUFF_SIZE);

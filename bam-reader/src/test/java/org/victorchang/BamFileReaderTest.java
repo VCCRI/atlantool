@@ -1,6 +1,6 @@
 package org.victorchang;
 
-import htsjdk.samtools.BAMRecord;
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -100,6 +100,10 @@ public class BamFileReaderTest {
         }
 
         @Override
+        public void onHeader(SAMFileHeader header) {
+        }
+
+        @Override
         public void onAlignmentPosition(long blockPos, int offset) {
             this.blockPos = blockPos;
             this.offset = offset;
@@ -132,6 +136,10 @@ public class BamFileReaderTest {
     private class AlignmentRecordingHandler implements BamRecordHandler {
 
         private SAMRecord record;
+
+        @Override
+        public void onHeader(SAMFileHeader header) {
+        }
 
         @Override
         public void onAlignmentPosition(long blockPos, int offset) {
