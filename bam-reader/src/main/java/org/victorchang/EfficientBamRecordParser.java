@@ -1,9 +1,12 @@
 package org.victorchang;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMHeaderRecordComparator;
+
 import java.io.DataInput;
 import java.io.IOException;
 
-public class DefaultBamRecordParser implements BamRecordParser {
+public class EfficientBamRecordParser implements BamRecordParser {
     private static final int QNAME_SIZE = 256;
     private static final int SEQ_SIZE = 128;
 
@@ -13,13 +16,13 @@ public class DefaultBamRecordParser implements BamRecordParser {
     private final byte[] qnameBuffer;
     private byte[] seqBuffer;
 
-    public DefaultBamRecordParser() {
+    public EfficientBamRecordParser() {
         qnameBuffer = new byte[QNAME_SIZE];
         seqBuffer = new byte[SEQ_SIZE];
     }
 
     @Override
-    public void parse(DataInput dataInput, BamRecordHandler handler) throws IOException {
+    public void parse(SAMFileHeader header, DataInput dataInput, int recordLength, BamRecordHandler handler) throws IOException {
         dataInput.readInt(); // reference seq id
         dataInput.readInt(); // pos
         int qnameLen = dataInput.readUnsignedByte();

@@ -2,6 +2,8 @@ package org.victorchang;
 
 
 import com.google.common.io.LittleEndianDataInputStream;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SamReaderFactory;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
@@ -24,6 +26,7 @@ public class DefaultBamRecordReader implements BamRecordReader {
     @SuppressWarnings("UnstableApiUsage")
     @Override
     public void read(Path bamFile, long coffset, int uoffset, BamRecordHandler recordHandler) throws IOException {
+        final SAMFileHeader header = SamReaderFactory.make().getFileHeader(bamFile);
         try (FileChannel fileChannel = FileChannel.open(bamFile, READ).position(coffset)) {
             InputStream compressedStream = new BufferedInputStream(Channels.newInputStream(fileChannel), BUFF_SIZE);
 
@@ -35,8 +38,8 @@ public class DefaultBamRecordReader implements BamRecordReader {
             while (uoffset > 0) {
                 uoffset -= dataInput.skipBytes(uoffset);
             }
-            dataInput.readInt(); // record length
-            recordParser.parse(dataInput, recordHandler);
+            final int recordLength = dataInput.readInt();// record length
+            recordParser.parse(header, dataInput, recordLength, recordHandler);
         }
     }
 
