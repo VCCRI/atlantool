@@ -46,14 +46,14 @@ public class QnameIndexer {
         bufferPool = new KeyPointerBufferPool(threadCount + 1, bufferSize);
     }
 
-    public long index(Path indexFolder, Path bamFile) throws IOException {
-        return index(indexFolder, bamFile, Long.MAX_VALUE);
+    public long index(Path indexFolder, Path bamFile, Path tempDir) throws IOException {
+        return index(indexFolder, bamFile, tempDir, Long.MAX_VALUE);
     }
 
     @SuppressWarnings("UnstableApiUsage")
-    public long index(Path indexFolder, Path bamFile, long bytesLimit) throws IOException {
+    public long index(Path indexDir, Path bamFile, Path tempDir, long bytesLimit) throws IOException {
 
-        FileStore qnameStore = new DefaultFileStore(indexFolder, "qname", "part");
+        FileStore qnameStore = new DefaultFileStore(tempDir, "qname", "part");
         SortedQnameFileFactory qnameFileFactory = new SortedQnameFileFactory(qnameStore, keyPointerWriter);
 
         QnamePosCollector collector = new QnamePosCollector(bufferPool, executorService, buffer -> {
@@ -85,16 +85,20 @@ public class QnameIndexer {
                 .map(BaseStream::iterator)
                 .collect(Collectors.toList()), KeyPointer::compareTo);
 
-        Path indexLevel0 = indexFolder.resolve("qname.0");
+        Path indexLevel0 = indexDir.resolve("qname.0");
         try (FileChannel fileChannel0 = FileChannel.open(indexLevel0, CREATE, WRITE, TRUNCATE_EXISTING)) {
             List<KeyPointer> metadata = keyPointerWriter.write(Channels.newOutputStream(fileChannel0),
                     Streams.stream(merged), (int) Math.sqrt(recordCount));
 
-            Path indexLevel1 = indexFolder.resolve("qname.1");
+            Path indexLevel1 = indexDir.resolve("qname.1");
             try (FileChannel fileChannel1 = FileChannel.open(indexLevel1, CREATE, WRITE, TRUNCATE_EXISTING)) {
                 keyPointerWriter.write(Channels.newOutputStream(fileChannel1), metadata.stream(), metadata.size());
             }
-            metadata.stream().forEach(x -> log.info("{}", x));
+
+            log.info("First 5 index blocks");
+            metadata.stream()
+                    .limit(5)
+                    .forEach(x -> log.info("{}", x));
         }
 
         parts.forEach(BaseStream::close);

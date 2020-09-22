@@ -31,11 +31,13 @@ public class KeyPointerWriter {
         Iterable<KeyPointer> iterable = stream::iterator;
         for (KeyPointer x : iterable) {
             lastItem = x;
-            if (count > blockSize) {
+            if (count >= blockSize) {
                 long coffset = concatenatedStream.getCompressedCount();
                 int uoffset = (int) concatenatedStream.getUncompressedCount();
-                metadata.add(new KeyPointer(coffset, uoffset, x.getKey(), x.getKey().length));
-                count = 0;
+                if (uoffset < 1 << 16) { // if uoffset == 1 << 16 we will write next item
+                    metadata.add(new KeyPointer(coffset, uoffset, x.getKey(), x.getKey().length));
+                    count = 0;
+                }
             }
             dataOutput.writeShort(x.getKey().length + 8);
             dataOutput.write(x.getKey());

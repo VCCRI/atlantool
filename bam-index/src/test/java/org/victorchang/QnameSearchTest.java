@@ -40,7 +40,7 @@ public class QnameSearchTest {
         Files.createDirectories(indexFolder);
 
         long start = System.nanoTime();
-        long recordCount = indexer.index(indexFolder, bamFile);
+        long recordCount = indexer.index(indexFolder, bamFile, indexFolder);
         long finish = System.nanoTime();
 
         log.info("Create index of {} records completed in {}", recordCount, (finish - start) / 1000_000 + "ms");

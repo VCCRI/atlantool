@@ -33,19 +33,18 @@ public class QnameCommand {
 
 @Command(name = "index")
 class IndexCommand implements Callable<Integer> {
-
-    private static final int DEFAULT_THREAD_COUNT = 1;
-    private static final int DEFAULT_SORT_BUFFER_SIZE = 500_000;
-
-    @Parameters(paramLabel = "bam-file", description = "Path to the bam file")
+    @Parameters(paramLabel = "bam-file", description = "Path to the BAM file")
     Path bamPath;
-    @Parameters(paramLabel = "index-path", description = "Directory to store index file")
+    @Parameters(paramLabel = "index-path", description = "Directory to store index files")
     Path indexDirectory;
-    @Option(names = "--thread-count", description = "No.of threads to use", defaultValue = "1")
+    @Option(names = "--thread-count", description = "Number of threads used for sorting", defaultValue = "1")
     int threadCount;
+    @Option(names = "--sort-buffer-size", description = "Maximum number of records per buffer used for sorting", defaultValue = "500000")
+    int sortBufferSize;
     @Option(names = "--limit-bytes", description = "Only read and index first given bytes")
     long bytesLimit;
-
+    @Option(names = "--temporary-path", description = "Directory to store temporary files for sorting")
+    Path tempDirectory;
 
     @Override
     public Integer call() throws Exception {
@@ -53,8 +52,19 @@ class IndexCommand implements Callable<Integer> {
             System.err.println(bamPath + " not found.");
             return -1;
         }
+        if (!Files.isDirectory(indexDirectory)) {
+            System.err.println(indexDirectory + " not found.");
+            return -1;
+        }
+        if (tempDirectory == null) {
+            tempDirectory = indexDirectory;
+        }
+        if (!Files.isDirectory(tempDirectory)) {
+            System.err.println(tempDirectory + " not found.");
+            return -1;
+        }
+
         bytesLimit = bytesLimit == 0 ? Long.MAX_VALUE : bytesLimit;
-        int sortBufferSize = DEFAULT_SORT_BUFFER_SIZE;
 
         BamFileReader fileReader = new DefaultBamFileReader(new DefaultBamRecordParser());
         QnameIndexer indexer = new QnameIndexer(fileReader,
@@ -69,7 +79,7 @@ class IndexCommand implements Callable<Integer> {
                     sortBufferSize);
 
             long start = System.nanoTime();
-            indexer.index(indexDirectory, bamPath, bytesLimit);
+            indexer.index(indexDirectory, bamPath, tempDirectory, bytesLimit);
             long finish = System.nanoTime();
 
             LOG.info("Create index completed in {}", (finish - start) / 1000_000 + "ms");
@@ -85,11 +95,11 @@ class IndexCommand implements Callable<Integer> {
 
 @Command(name = "view")
 class ViewCommand implements Callable<Integer> {
-    @Parameters(paramLabel = "bam-file", description = "Path to the bam file")
+    @Parameters(paramLabel = "bam-file", description = "Path to the BAM file")
     Path bamPath;
-    @Parameters(paramLabel = "index-path", description = "Directory to store index file")
+    @Parameters(paramLabel = "index-path", description = "Directory containing index files")
     Path indexPath;
-    @Parameters(paramLabel = "qname", description = "Qname to search for")
+    @Parameters(paramLabel = "qname", description = "QNAME to search for")
     String qname;
 
     @Override

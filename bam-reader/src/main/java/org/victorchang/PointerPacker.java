@@ -1,7 +1,7 @@
 package org.victorchang;
 
 /**
- * Packs compressed offset {@code coffset} and uncompressed offset {@code uoffset} into a virtual offset {@code voffset}
+ * Packs compressed offset {@code coffset} and uncompressed offset {@code uoffset} into a pointer {@code voffset}
  * which is 64 bit long. It assumes that 0 <= coffset < 2^48 and 0 <= uoffset < 2^16.
  */
 public final class PointerPacker {

@@ -13,7 +13,7 @@ import java.util.Arrays;
 import static java.nio.file.StandardOpenOption.READ;
 
 public class QnameSearcher implements BamRecordHandler {
-    private static final Logger log = LoggerFactory.getLogger(QnameIndexer.class);
+    private static final Logger log = LoggerFactory.getLogger(QnameSearcher.class);
 
     private final KeyPointerReader keyPointerReader;
     private final BamRecordReader recordReader;
