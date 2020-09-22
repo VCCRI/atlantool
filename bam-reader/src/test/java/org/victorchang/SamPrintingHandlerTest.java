@@ -25,7 +25,7 @@ public class SamPrintingHandlerTest {
         handler.finish();
 
         assertThat(new String(outputStream.toByteArray()), equalTo(
-                "SOLEXA-1GA-1_0047_FC62472:5:81:15648:19537#0\t16\tchr1\t10148\t25\t36M\t*\t0\t0\tCCCCAACCCTAACCCTAACCCTAACCCTAACCTAAC\tB8='35:@;+30;B@+CAFFFGGEGGGGGGGGEGGG\tNM:i:1\tX1:i:1\tMD:Z:32C3\n"));
+                "SOLEXA-1GA-1_0047_FC62472:5:81:15648:19537#0\t16\tchr1\t10148\t25\t36M\t*\t0\t0\tCCCCAACCCTAACCCTAACCCTAACCCTAACCTAAC\tB8='35:@;+30;B@+CAFFFGGEGGGGGGGGEGGG\tX1:i:1\tMD:Z:32C3\tNM:i:1\n"));
     }
 
 }
