@@ -116,11 +116,13 @@ class ViewCommand implements Callable<Integer> {
 
         long start = System.nanoTime();
 
-        BamRecordReader bamRecordReader = new DefaultBamRecordReader(new EfficientBamRecordParser());
+        BamRecordReader bamRecordReader = new DefaultBamRecordReader(new SamtoolsBasedParser());
         KeyPointerReader qnamePosReader = new KeyPointerReader();
-        QnameSearcher searcher = new QnameSearcher(qnamePosReader, bamRecordReader, new DebuggingHandler());
+        SamPrintingHandler handler = new SamPrintingHandler(System.out);
+        QnameSearcher searcher = new QnameSearcher(qnamePosReader, bamRecordReader, handler);
 
         searcher.search(bamPath, indexPath, qname);
+        handler.finish();
 
         long finish = System.nanoTime();
 
