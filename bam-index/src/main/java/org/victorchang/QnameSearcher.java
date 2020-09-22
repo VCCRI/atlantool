@@ -1,11 +1,11 @@
 package org.victorchang;
 
-import htsjdk.samtools.BAMRecord;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTextWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.Channels;
@@ -77,8 +77,6 @@ public class QnameSearcher {
 
     public static class DebuggingHandler implements BamRecordHandler {
 
-        private final SAMTextWriter samTextWriter = new SAMTextWriter(System.out);
-
         @Override
         public void onAlignmentPosition(long blockPos, int offset) {
         }
@@ -97,7 +95,12 @@ public class QnameSearcher {
 
         @Override
         public void onAlignmentRecord(SAMRecord record) {
-            samTextWriter.writeAlignment(record);
+            final ByteArrayOutputStream inMemoryStream = new ByteArrayOutputStream();
+            final SAMTextWriter writer = new SAMTextWriter(inMemoryStream);
+            writer.writeAlignment(record);
+            writer.finish();
+            log.debug("SAM alignment record (below)");
+            log.debug(new String(inMemoryStream.toByteArray()));
         }
     }
 }
