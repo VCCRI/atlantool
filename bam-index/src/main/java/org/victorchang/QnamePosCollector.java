@@ -1,5 +1,6 @@
 package org.victorchang;
 
+import htsjdk.samtools.BAMRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +34,7 @@ public class QnamePosCollector implements BamRecordHandler {
     }
 
     @Override
-    public void onRecord(long blockPos, int offset) {
+    public void onAlignmentPosition(long blockPos, int offset) {
         this.coffset = blockPos;
         this.uoffset = offset;
     }
@@ -48,6 +49,10 @@ public class QnamePosCollector implements BamRecordHandler {
 
     @Override
     public void onSequence(byte[] seqBuffer, int seqLen) {
+    }
+
+    @Override
+    public void onAlignmentRecord(BAMRecord record) {
     }
 
     private void flush() {

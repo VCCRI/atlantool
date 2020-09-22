@@ -1,5 +1,6 @@
 package org.victorchang;
 
+import htsjdk.samtools.BAMRecord;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -17,7 +18,7 @@ public class BamRecordReaderTest {
         URL example1 = ClassLoader.getSystemResource("bam/example1");
         Path path = Paths.get(example1.toURI());
 
-        BamRecordReader recordReader = new DefaultBamRecordReader(new DefaultBamRecordParser());
+        BamRecordReader recordReader = new DefaultBamRecordReader(new EfficientBamRecordParser());
 
         RecordFetcher handler = new RecordFetcher();
         recordReader.read(path, 36300895, 59353, handler);
@@ -31,7 +32,7 @@ public class BamRecordReaderTest {
         URL example1 = ClassLoader.getSystemResource("bam/example2");
         Path path = Paths.get(example1.toURI());
 
-        BamRecordReader recordReader = new DefaultBamRecordReader(new DefaultBamRecordParser());
+        BamRecordReader recordReader = new DefaultBamRecordReader(new EfficientBamRecordParser());
 
         RecordFetcher handler = new RecordFetcher();
         recordReader.read(path, 28645829, 12964, handler);
@@ -45,7 +46,7 @@ public class BamRecordReaderTest {
         URL example1 = ClassLoader.getSystemResource("bam/example3");
         Path path = Paths.get(example1.toURI());
 
-        BamRecordReader recordReader = new DefaultBamRecordReader(new DefaultBamRecordParser());
+        BamRecordReader recordReader = new DefaultBamRecordReader(new EfficientBamRecordParser());
 
         RecordFetcher handler = new RecordFetcher();
         recordReader.read(path, 0, 64974, handler);
@@ -59,7 +60,7 @@ public class BamRecordReaderTest {
         private String seq;
 
         @Override
-        public void onRecord(long blockPos, int offset) {
+        public void onAlignmentPosition(long blockPos, int offset) {
         }
 
         @Override
@@ -78,6 +79,10 @@ public class BamRecordReaderTest {
 
         public String getSeq() {
             return seq;
+        }
+
+        @Override
+        public void onAlignmentRecord(BAMRecord record) {
         }
     }
 }

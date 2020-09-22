@@ -1,5 +1,7 @@
 package org.victorchang;
 
+import htsjdk.samtools.BAMRecord;
+import htsjdk.samtools.SAMTextWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,15 +14,17 @@ import java.util.Arrays;
 
 import static java.nio.file.StandardOpenOption.READ;
 
-public class QnameSearcher implements BamRecordHandler {
+public class QnameSearcher {
     private static final Logger log = LoggerFactory.getLogger(QnameSearcher.class);
 
     private final KeyPointerReader keyPointerReader;
     private final BamRecordReader recordReader;
+    private final BamRecordHandler handler;
 
-    public QnameSearcher(KeyPointerReader keyPointerReader, BamRecordReader recordReader) {
+    public QnameSearcher(KeyPointerReader keyPointerReader, BamRecordReader recordReader, BamRecordHandler handler) {
         this.keyPointerReader = keyPointerReader;
         this.recordReader = recordReader;
+        this.handler = handler;
     }
 
     public int search(Path bamFile, Path indexFolder, String qname) throws IOException {
@@ -57,7 +61,7 @@ public class QnameSearcher implements BamRecordHandler {
         for (KeyPointer x : indexLevel0) {
             if (Arrays.equals(x.getKey(), input)) {
                 log.info("Found record at {}", x);
-                recordReader.read(bamFile, x.getPointer(), this);
+                recordReader.read(bamFile, x.getPointer(), handler);
                 found++;
             }
             if (Arrays.compareUnsigned(x.getKey(), input) > 0) {
@@ -70,19 +74,30 @@ public class QnameSearcher implements BamRecordHandler {
         return found;
     }
 
-    @Override
-    public void onRecord(long blockPos, int offset) {
-    }
+    public static class DebuggingHandler implements BamRecordHandler {
 
-    @Override
-    public void onQname(byte[] qnameBuffer, int qnameLen) {
-        String decoded = Ascii7Coder.INSTANCE.decode(qnameBuffer, 0, qnameLen);
-        log.info("qname " + decoded);
-    }
+        private final SAMTextWriter samTextWriter = new SAMTextWriter(System.out);
 
-    @Override
-    public void onSequence(byte[] seqBuffer, int seqLen) {
-        String decoded = SeqDecoder.INSTANCE.decode(seqBuffer, 0, seqLen);
-        log.info("sequence " + decoded);
+        @Override
+        public void onAlignmentPosition(long blockPos, int offset) {
+        }
+
+        @Override
+        public void onQname(byte[] qnameBuffer, int qnameLen) {
+            String decoded = Ascii7Coder.INSTANCE.decode(qnameBuffer, 0, qnameLen);
+            log.info("qname " + decoded);
+        }
+
+        @Override
+        public void onSequence(byte[] seqBuffer, int seqLen) {
+            String decoded = SeqDecoder.INSTANCE.decode(seqBuffer, 0, seqLen);
+            log.info("sequence " + decoded);
+        }
+
+        @Override
+        public void onAlignmentRecord(BAMRecord record) {
+            samTextWriter.writeAlignment(record);
+        }
     }
 }
+

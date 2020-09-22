@@ -2,6 +2,7 @@ package org.victorchang;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.victorchang.QnameSearcher.DebuggingHandler;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -66,7 +67,7 @@ class IndexCommand implements Callable<Integer> {
 
         bytesLimit = bytesLimit == 0 ? Long.MAX_VALUE : bytesLimit;
 
-        BamFileReader fileReader = new DefaultBamFileReader(new DefaultBamRecordParser());
+        BamFileReader fileReader = new DefaultBamFileReader(new EfficientBamRecordParser());
         QnameIndexer indexer = new QnameIndexer(fileReader,
                 new KeyPointerWriter(),
                 new KeyPointerReader(),
@@ -115,9 +116,9 @@ class ViewCommand implements Callable<Integer> {
 
         long start = System.nanoTime();
 
-        BamRecordReader bamRecordReader = new DefaultBamRecordReader(new DefaultBamRecordParser());
+        BamRecordReader bamRecordReader = new DefaultBamRecordReader(new EfficientBamRecordParser());
         KeyPointerReader qnamePosReader = new KeyPointerReader();
-        QnameSearcher searcher = new QnameSearcher(qnamePosReader, bamRecordReader);
+        QnameSearcher searcher = new QnameSearcher(qnamePosReader, bamRecordReader, new DebuggingHandler());
 
         searcher.search(bamPath, indexPath, qname);
 
