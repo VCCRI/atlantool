@@ -44,8 +44,7 @@ public class BamFileReaderTest {
         fileReader.read(path, handler);
         long finish = System.nanoTime();
 
-        log.info(String.format("#blocks %d, #records %d, duration %d ms\n",
-                handler.getBlockCount(), handler.getRecordCount(),  (finish - start) / 1000_000));
+        log.info(String.format("#records %d, duration %d ms", handler.getRecordCount(),  (finish - start) / 1000_000));
     }
 
     @Test
@@ -60,8 +59,7 @@ public class BamFileReaderTest {
         fileReader.read(path, handler);
         long finish = System.nanoTime();
 
-        log.info(String.format("#blocks %d, #records %d, duration %d ms\n",
-                handler.getBlockCount(), handler.getRecordCount(),  (finish - start) / 1000_000));
+        log.info(String.format("#records %d, duration %d ms", handler.getRecordCount(),  (finish - start) / 1000_000));
     }
 
     @Test
@@ -76,23 +74,18 @@ public class BamFileReaderTest {
         fileReader.read(path, handler);
         long finish = System.nanoTime();
 
-        log.info(String.format("#blocks %d, #records %d, duration %d ms\n",
-                handler.getBlockCount(), handler.getRecordCount(),  (finish - start) / 1000_000));
+        log.info(String.format("#records %d, duration %d ms", handler.getRecordCount(),  (finish - start) / 1000_000));
     }
 
     private static class TestHandler implements BamRecordHandler {
-        private long blockCount;
         private long recordCount;
-        private long blockPos;
-        private long offset;
+        private long coffset;
+        private int uoffset;
+
+        private String qname;
 
         public TestHandler() {
-            blockCount = 0;
             recordCount = 0;
-        }
-
-        public long getBlockCount() {
-            return blockCount;
         }
 
         public long getRecordCount() {
@@ -104,27 +97,22 @@ public class BamFileReaderTest {
         }
 
         @Override
-        public void onAlignmentPosition(long blockPos, int offset) {
-            this.blockPos = blockPos;
-            this.offset = offset;
-
+        public void onAlignmentPosition(long coffset, int uoffset) {
+            this.coffset = coffset;
+            this.uoffset = uoffset;
             recordCount++;
-            blockCount++;
         }
 
         @Override
         public void onQname(byte[] qnameBuffer, int qnameLen) {
-            if (recordCount % 100_000 == 1) {
-                String decoded = Ascii7Coder.INSTANCE.decode(qnameBuffer, 0, qnameLen);
-                log.debug(String.format("block pos %d, offset %d, qname %s\n", blockPos, offset, decoded));
-            }
+            qname = Ascii7Coder.INSTANCE.decode(qnameBuffer, 0, qnameLen);
         }
 
         @Override
         public void onSequence(byte[] seqBuffer, int seqLen) {
-            if (recordCount % 100_000 == 1) {
-                String decoded = SeqDecoder.INSTANCE.decode(seqBuffer, 0, seqLen);
-                log.debug(String.format("block pos %d, offset %d, seq %s\n", blockPos, offset, decoded));
+            String seq = SeqDecoder.INSTANCE.decode(seqBuffer, 0, seqLen);
+            if (recordCount <= 5) {
+                log.debug(String.format("coffset %d, uoffset %d, qname %s, seq %s", coffset, uoffset, qname, seq));
             }
         }
 
@@ -133,7 +121,7 @@ public class BamFileReaderTest {
         }
     }
 
-    private class AlignmentRecordingHandler implements BamRecordHandler {
+    private static class AlignmentRecordingHandler implements BamRecordHandler {
 
         private SAMRecord record;
 
