@@ -25,6 +25,7 @@
         <junit.version>4.12</junit.version>
         <mockito-core.version>2.22.0</mockito-core.version>
         <htsjdk.version>2.23.0</htsjdk.version>
+        <picocli.version>4.5.1</picocli.version>
     </properties>
 
     <dependencyManagement>
@@ -68,6 +69,16 @@
                 <groupId>com.github.samtools</groupId>
                 <artifactId>htsjdk</artifactId>
                 <version>${htsjdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>info.picocli</groupId>
+                <artifactId>picocli</artifactId>
+                <version>${picocli.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>info.picocli</groupId>
+                <artifactId>picocli-codegen</artifactId>
+                <version>${picocli.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.hamcrest</groupId>

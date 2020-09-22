@@ -11,6 +11,10 @@
 
     <artifactId>bam-cmd</artifactId>
 
+    <properties>
+        <graalvm.version>20.2.0</graalvm.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
@@ -35,10 +39,18 @@
         <dependency>
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
-            <version>4.5.1</version>
+        </dependency>
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli-codegen</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>graal-sdk</artifactId>
+            <version>${graalvm.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
-
     <build>
         <plugins>
             <plugin>
@@ -63,6 +75,31 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.graalvm.nativeimage</groupId>
+                <artifactId>native-image-maven-plugin</artifactId>
+                <version>${graalvm.version}</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>native-image</goal>
+                        </goals>
+                        <phase>package</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <skip>false</skip>
+                    <imageName>atlantool</imageName>
+                    <buildArgs>
+                        -H:ReflectionConfigurationFiles=${project.build.resources[0].directory}/reflect.json
+                        -H:+ReportUnsupportedElementsAtRuntime
+                        -H:IncludeResources=logback.xml
+                        --static
+                        --no-server
+                        --no-fallback
+                    </buildArgs>
+                </configuration>
             </plugin>
         </plugins>
     </build>
