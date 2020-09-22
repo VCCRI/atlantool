@@ -1,6 +1,7 @@
 package org.victorchang;
 
 import htsjdk.samtools.BAMRecord;
+import htsjdk.samtools.SAMRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,7 +53,7 @@ public class QnamePosCollector implements BamRecordHandler {
     }
 
     @Override
-    public void onAlignmentRecord(BAMRecord record) {
+    public void onAlignmentRecord(SAMRecord record) {
     }
 
     private void flush() {

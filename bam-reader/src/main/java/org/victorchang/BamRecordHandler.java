@@ -1,9 +1,6 @@
 package org.victorchang;
 
-import htsjdk.samtools.BAMRecord;
-import htsjdk.samtools.SAMFileHeader;
-
-import java.nio.file.Path;
+import htsjdk.samtools.SAMRecord;
 
 /**
  * Callbacks that are invoked by {@link BamFileReader}.
@@ -15,5 +12,5 @@ public interface BamRecordHandler {
 
     void onSequence(byte[] seqBuffer, int seqLen);
 
-    void onAlignmentRecord(BAMRecord record);
+    void onAlignmentRecord(SAMRecord record);
 }

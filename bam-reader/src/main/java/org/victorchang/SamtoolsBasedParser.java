@@ -1,8 +1,8 @@
 package org.victorchang;
 
-import htsjdk.samtools.BAMRecord;
 import htsjdk.samtools.DefaultSAMRecordFactory;
 import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordFactory;
 
 import java.io.DataInput;
@@ -28,10 +28,10 @@ public class SamtoolsBasedParser implements BamRecordParser {
         final byte[] restOfData = new byte[recordLength - 32]; // Excluding the data we've read
         dataInput.readFully(restOfData);
 
-        final BAMRecord bamRecord = samRecordFactory.createBAMRecord(
+        final SAMRecord samRecord = samRecordFactory.createBAMRecord(
                 header,
                 referenceSeqId,
-                pos,
+                pos + 1, // In SAM specification this is 1-based
                 (short) qnameLen,
                 (short) mapq,
                 bin,
@@ -39,13 +39,13 @@ public class SamtoolsBasedParser implements BamRecordParser {
                 flag,
                 seqLen,
                 nextRefId,
-                nextPos,
+                nextPos + 1, // In SAM specification this is 1-based
                 templateLen,
                 restOfData);
 
-        handler.onQname(bamRecord.getReadName().getBytes(), qnameLen);
-        handler.onSequence(bamRecord.getReadBases(), seqLen);
-        handler.onAlignmentRecord(bamRecord);
+        handler.onQname(samRecord.getReadName().getBytes(), qnameLen);
+        handler.onSequence(samRecord.getReadBases(), seqLen);
+        handler.onAlignmentRecord(samRecord);
     }
 
 }

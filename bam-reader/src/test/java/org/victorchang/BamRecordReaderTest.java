@@ -1,6 +1,7 @@
 package org.victorchang;
 
 import htsjdk.samtools.BAMRecord;
+import htsjdk.samtools.SAMRecord;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -82,7 +83,7 @@ public class BamRecordReaderTest {
         }
 
         @Override
-        public void onAlignmentRecord(BAMRecord record) {
+        public void onAlignmentRecord(SAMRecord record) {
         }
     }
 }

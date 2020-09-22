@@ -1,6 +1,6 @@
 package org.victorchang;
 
-import htsjdk.samtools.BAMRecord;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTextWriter;
 
 import java.io.OutputStream;
@@ -26,7 +26,7 @@ public class SamPrintingHandler implements BamRecordHandler {
     }
 
     @Override
-    public void onAlignmentRecord(BAMRecord record) {
+    public void onAlignmentRecord(SAMRecord record) {
         samWriter.writeAlignment(record);
     }
 
