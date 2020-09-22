@@ -23,7 +23,7 @@ public class BamRecordReaderTest {
         recordReader.read(path, 36300895, 59353, handler);
 
         assertThat(handler.getQname(), equalTo("SOLEXA-1GA-1_4_FC20ENL:7:76:613:540"));
-        assertThat(handler.getSeq(), equalTo("TTAAAAAAGGAAGGAATTAATTAATT="));
+        assertThat(handler.getSeq(), equalTo("TTAATATATGAATGGATTAATTCATTC"));
     }
 
     @Test
@@ -37,7 +37,7 @@ public class BamRecordReaderTest {
         recordReader.read(path, 28645829, 12964, handler);
 
         assertThat(handler.getQname(), equalTo("SOLEXA-1GA-1_6_FC20ET7:6:291:877:537"));
-        assertThat(handler.getSeq(), equalTo("GGTTAATTCCAAAATTGGTTGGGGGG="));
+        assertThat(handler.getSeq(), equalTo("TGTTGAGTGCTATAGTGGTTTGGGAGG"));
     }
 
     @Test
@@ -51,7 +51,7 @@ public class BamRecordReaderTest {
         recordReader.read(path, 0, 64974, handler);
 
         assertThat(handler.getQname(), equalTo("SOLEXA-1GA-1_6_FC20ET7:7:22:94:703"));
-        assertThat(handler.getSeq(), equalTo("GGCCTTTTAATTTTCCCCGGGGGGTT="));
+        assertThat(handler.getSeq(), equalTo("TGCCCTCTGACTGTGCTCAGGGGGCTC"));
     }
 
     private static class RecordFetcher implements BamRecordHandler {

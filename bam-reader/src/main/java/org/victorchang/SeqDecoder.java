@@ -13,7 +13,7 @@ public final class SeqDecoder {
     public String decode(byte[] buffer, int offset, int seqLen) {
         byte[] ascii = new byte[seqLen];
         for (int i = 0; i < (seqLen + 1) /2; i++) {
-            ascii[2*i] = LETTERS[buffer[offset + i] & 0xFF >> 4];
+            ascii[2*i] = LETTERS[(buffer[offset + i] & 0xFF) >> 4];
             if (2*i + 1 < seqLen) {
                 ascii[2 * i + 1] = LETTERS[buffer[offset + i] & 0xF];
             }

@@ -67,7 +67,7 @@ class IndexCommand implements Callable<Integer> {
         bytesLimit = bytesLimit == 0 ? Long.MAX_VALUE : bytesLimit;
 
         BamFileReader fileReader = new DefaultBamFileReader(new DefaultBamRecordParser());
-        QnameIndexer indexer = new QnameIndexer(fileReader,
+        SortedQnameIndexer indexer = new SortedQnameIndexer(fileReader,
                 new KeyPointerWriter(),
                 new KeyPointerReader(),
                 threadCount,
