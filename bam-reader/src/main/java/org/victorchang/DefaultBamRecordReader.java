@@ -27,6 +27,7 @@ public class DefaultBamRecordReader implements BamRecordReader {
     @Override
     public void read(Path bamFile, long coffset, int uoffset, BamRecordHandler recordHandler) throws IOException {
         final SAMFileHeader header = SamReaderFactory.make().getFileHeader(bamFile);
+        recordHandler.onHeader(header);
         try (FileChannel fileChannel = FileChannel.open(bamFile, READ).position(coffset)) {
             InputStream compressedStream = new BufferedInputStream(Channels.newInputStream(fileChannel), BUFF_SIZE);
 

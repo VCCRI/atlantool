@@ -1,5 +1,6 @@
 package org.victorchang;
 
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTextWriter;
 import org.slf4j.Logger;
@@ -76,6 +77,10 @@ public class QnameSearcher {
     }
 
     public static class DebuggingHandler implements BamRecordHandler {
+
+        @Override
+        public void onHeader(SAMFileHeader header) {
+        }
 
         @Override
         public void onAlignmentPosition(long blockPos, int offset) {
