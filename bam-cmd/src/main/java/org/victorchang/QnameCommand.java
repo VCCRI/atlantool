@@ -1,8 +1,8 @@
 package org.victorchang;
 
+import ch.qos.logback.classic.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.victorchang.QnameSearcher.DebuggingHandler;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -46,6 +46,8 @@ class IndexCommand implements Callable<Integer> {
     long bytesLimit;
     @Option(names = "--temporary-path", description = "Directory to store temporary files for sorting")
     Path tempDirectory;
+    @Option(names = "--debug", description = "Switch on debugging output", defaultValue = "false")
+    boolean debug;
 
     @Override
     public Integer call() throws Exception {
@@ -63,6 +65,10 @@ class IndexCommand implements Callable<Integer> {
         if (!Files.isDirectory(tempDirectory)) {
             System.err.println(tempDirectory + " not found.");
             return -1;
+        }
+        if (debug) {
+            ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+            root.setLevel(Level.DEBUG);
         }
 
         bytesLimit = bytesLimit == 0 ? Long.MAX_VALUE : bytesLimit;
@@ -102,6 +108,8 @@ class ViewCommand implements Callable<Integer> {
     Path indexPath;
     @Parameters(paramLabel = "qname", description = "QNAME to search for")
     String qname;
+    @Option(names = "--debug", description = "Switch on debugging output", defaultValue = "false")
+    boolean debug;
 
     @Override
     public Integer call() throws Exception {
@@ -112,6 +120,10 @@ class ViewCommand implements Callable<Integer> {
         if (!Files.isDirectory(indexPath)) {
             System.err.println(indexPath + " not found.");
             return -1;
+        }
+        if (debug) {
+            ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+            root.setLevel(Level.DEBUG);
         }
 
         long start = System.nanoTime();
