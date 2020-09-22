@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.victorchang.QnameSearcher.DebuggingHandler;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -25,12 +26,12 @@ public class QnameSearchTest {
 
     @Before
     public void setUp() {
-        BamFileReader fileReader = new DefaultBamFileReader(new DefaultBamRecordParser());
+        BamFileReader fileReader = new DefaultBamFileReader(new EfficientBamRecordParser());
         indexer = new QnameIndexer(fileReader, new KeyPointerWriter(), new KeyPointerReader(), MAX_THREAD, MAX_RECORD);
 
-        BamRecordReader bamRecordReader = new DefaultBamRecordReader(new DefaultBamRecordParser());
+        BamRecordReader bamRecordReader = new DefaultBamRecordReader(new EfficientBamRecordParser());
         KeyPointerReader keyPointerReader = new KeyPointerReader();
-        searcher = new QnameSearcher(keyPointerReader, bamRecordReader);
+        searcher = new QnameSearcher(keyPointerReader, bamRecordReader, new DebuggingHandler());
     }
 
     @Test

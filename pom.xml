@@ -24,6 +24,7 @@
         <hamcrest.version>2.2</hamcrest.version>
         <junit.version>4.12</junit.version>
         <mockito-core.version>2.22.0</mockito-core.version>
+        <htsjdk.version>2.23.0</htsjdk.version>
     </properties>
 
     <dependencyManagement>
@@ -38,7 +39,6 @@
                 <artifactId>bam-index</artifactId>
                 <version>${project.version}</version>
             </dependency>
-
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
@@ -64,7 +64,11 @@
                 <artifactId>commons-lang3</artifactId>
                 <version>${commons-lang3.version}</version>
             </dependency>
-
+            <dependency>
+                <groupId>com.github.samtools</groupId>
+                <artifactId>htsjdk</artifactId>
+                <version>${htsjdk.version}</version>
+            </dependency>
             <dependency>
                 <groupId>org.hamcrest</groupId>
                 <artifactId>hamcrest</artifactId>

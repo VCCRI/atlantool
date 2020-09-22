@@ -1,5 +1,6 @@
 package org.victorchang;
 
+import ch.qos.logback.classic.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -45,6 +46,8 @@ class IndexCommand implements Callable<Integer> {
     long bytesLimit;
     @Option(names = "--temporary-path", description = "Directory to store temporary files for sorting")
     Path tempDirectory;
+    @Option(names = "--debug", description = "Switch on debugging output", defaultValue = "false")
+    boolean debug;
 
     @Override
     public Integer call() throws Exception {
@@ -63,10 +66,14 @@ class IndexCommand implements Callable<Integer> {
             System.err.println(tempDirectory + " not found.");
             return -1;
         }
+        if (debug) {
+            ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+            root.setLevel(Level.DEBUG);
+        }
 
         bytesLimit = bytesLimit == 0 ? Long.MAX_VALUE : bytesLimit;
 
-        BamFileReader fileReader = new DefaultBamFileReader(new DefaultBamRecordParser());
+        BamFileReader fileReader = new DefaultBamFileReader(new EfficientBamRecordParser());
         QnameIndexer indexer = new QnameIndexer(fileReader,
                 new KeyPointerWriter(),
                 new KeyPointerReader(),
@@ -101,6 +108,8 @@ class ViewCommand implements Callable<Integer> {
     Path indexPath;
     @Parameters(paramLabel = "qname", description = "QNAME to search for")
     String qname;
+    @Option(names = "--debug", description = "Switch on debugging output", defaultValue = "false")
+    boolean debug;
 
     @Override
     public Integer call() throws Exception {
@@ -112,14 +121,20 @@ class ViewCommand implements Callable<Integer> {
             System.err.println(indexPath + " not found.");
             return -1;
         }
+        if (debug) {
+            ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
+            root.setLevel(Level.DEBUG);
+        }
 
         long start = System.nanoTime();
 
-        BamRecordReader bamRecordReader = new DefaultBamRecordReader(new DefaultBamRecordParser());
+        BamRecordReader bamRecordReader = new DefaultBamRecordReader(new SamtoolsBasedParser());
         KeyPointerReader qnamePosReader = new KeyPointerReader();
-        QnameSearcher searcher = new QnameSearcher(qnamePosReader, bamRecordReader);
+        SamPrintingHandler handler = new SamPrintingHandler(System.out);
+        QnameSearcher searcher = new QnameSearcher(qnamePosReader, bamRecordReader, handler);
 
         searcher.search(bamPath, indexPath, qname);
+        handler.finish();
 
         long finish = System.nanoTime();
 
