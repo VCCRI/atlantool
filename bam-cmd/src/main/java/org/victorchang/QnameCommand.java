@@ -41,7 +41,7 @@ class IndexCommand implements Callable<Integer> {
     @Parameters(paramLabel = "bam-file", description = "Path to the BAM file")
     Path bamPath;
 
-    @Option(names = {"-i", "--index-path"}, description = "Directory to store index files. By default uses the same directory as bam file.")
+    @Option(names = {"-i", "--index-path"}, description = "Directory to store index files. By default uses a directory name that starts with the BAM file name (so stored next to it).")
     Path indexDirectory;
     @Option(names = "--thread-count", description = "Number of threads used for sorting", defaultValue = "1")
     int threadCount;
