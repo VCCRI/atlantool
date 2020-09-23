@@ -1,5 +1,6 @@
 package org.victorchang;
 
+import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -9,9 +10,15 @@ public class PointerPackerTest {
 
     @Test
     public void testPackUnpack() {
-        long pos = PointerPacker.INSTANCE.pack(36300895L, 59353);
+        roundtrip(36300895L, 59353);
+        roundtrip(0, 0);
+        roundtrip(BlockCompressedFilePointerUtil.MAX_BLOCK_ADDRESS, BlockCompressedFilePointerUtil.MAX_OFFSET);
+    }
 
-        assertThat(PointerPacker.INSTANCE.unpackCompressedOffset(pos), equalTo(36300895L));
-        assertThat(PointerPacker.INSTANCE.unpackUnCompressedOffset(pos), equalTo(59353));
+    private static void roundtrip(long coffset, int uoffset) {
+        long pos = PointerPacker.INSTANCE.pack(coffset, uoffset);
+
+        assertThat(PointerPacker.INSTANCE.unpackCompressedOffset(pos), equalTo(coffset));
+        assertThat(PointerPacker.INSTANCE.unpackUncompressedOffset(pos), equalTo(uoffset));
     }
 }

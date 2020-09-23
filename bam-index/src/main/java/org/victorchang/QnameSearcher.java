@@ -50,7 +50,7 @@ public class QnameSearcher {
         Path pathLevel0 = indexFolder.resolve("qname.0");
         FileChannel channelLevel0 = FileChannel.open(pathLevel0, READ);
         long coffset = PointerPacker.INSTANCE.unpackCompressedOffset(start.getPointer());
-        int uoffset = PointerPacker.INSTANCE.unpackUnCompressedOffset(start.getPointer());
+        int uoffset = PointerPacker.INSTANCE.unpackUncompressedOffset(start.getPointer());
 
         if (coffset >= channelLevel0.size()) {
             return 0;
