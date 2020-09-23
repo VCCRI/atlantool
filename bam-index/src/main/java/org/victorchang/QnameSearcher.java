@@ -40,7 +40,7 @@ public class QnameSearcher {
         KeyPointer key = new KeyPointer(0, input, input.length);
         KeyPointer start = key;
         for (KeyPointer x : indexLevel1) {
-            if (x.compareTo(key) > 0) {
+            if (x.compareTo(key) >= 0) {
                 break;
             }
             start = x;
@@ -62,7 +62,6 @@ public class QnameSearcher {
         Iterable<KeyPointer> indexLevel0 =  () -> keyPointerReader.read(inputStreamLevel0, uoffset).iterator();
         for (KeyPointer x : indexLevel0) {
             if (Arrays.equals(x.getKey(), input)) {
-                log.info("Found record at {}", x);
                 recordReader.read(bamFile, x.getPointer(), handler);
                 found++;
             }
