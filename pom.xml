@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.example</groupId>
+    <groupId>au.edu.victorchang</groupId>
     <artifactId>qname-search</artifactId>
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
@@ -19,7 +19,6 @@
 
         <guava.version>29.0-jre</guava.version>
         <slf4j-api.version>1.7.25</slf4j-api.version>
-        <logback-classic.version>1.2.3</logback-classic.version>
         <commons-compress.version>1.20</commons-compress.version>
         <commons-lang3.version>3.11</commons-lang3.version>
 
@@ -27,6 +26,7 @@
         <junit.version>4.12</junit.version>
         <mockito-core.version>2.22.0</mockito-core.version>
         <htsjdk.version>2.23.0</htsjdk.version>
+        <picocli.version>4.5.1</picocli.version>
     </properties>
 
     <dependencyManagement>
@@ -52,9 +52,9 @@
                 <version>${slf4j-api.version}</version>
             </dependency>
             <dependency>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-classic</artifactId>
-                <version>${logback-classic.version}</version>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-jdk14</artifactId>
+                <version>${slf4j-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
@@ -70,6 +70,16 @@
                 <groupId>com.github.samtools</groupId>
                 <artifactId>htsjdk</artifactId>
                 <version>${htsjdk.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>info.picocli</groupId>
+                <artifactId>picocli</artifactId>
+                <version>${picocli.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>info.picocli</groupId>
+                <artifactId>picocli-codegen</artifactId>
+                <version>${picocli.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.hamcrest</groupId>

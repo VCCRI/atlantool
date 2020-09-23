@@ -1,6 +1,5 @@
 package org.victorchang;
 
-import ch.qos.logback.classic.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -68,10 +67,8 @@ class IndexCommand implements Callable<Integer> {
             System.err.println(tempDirectory + " not found.");
             return -1;
         }
-        if (debug) {
-            ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
-            root.setLevel(Level.DEBUG);
-        }
+        java.util.logging.Logger.getLogger("")
+                .setLevel(debug ? java.util.logging.Level.ALL : java.util.logging.Level.SEVERE);
 
         bytesLimit = bytesLimit == 0 ? Long.MAX_VALUE : bytesLimit;
 
@@ -125,10 +122,8 @@ class ViewCommand implements Callable<Integer> {
             System.err.println(indexPath + " not found.");
             return -1;
         }
-        if (debug) {
-            ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(ch.qos.logback.classic.Logger.ROOT_LOGGER_NAME);
-            root.setLevel(Level.DEBUG);
-        }
+        java.util.logging.Logger.getLogger("")
+                .setLevel(debug ? java.util.logging.Level.ALL : java.util.logging.Level.SEVERE);
 
         long start = System.nanoTime();
 
