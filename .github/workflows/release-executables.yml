@@ -34,12 +34,23 @@ jobs:
       - name: Build project
         run: mvn -B clean package
 
+      - name: Build native image
+        id: build-native-image
+        uses: [actions/checkout@v2, ayltai/setup-graalvm@v1]
+        with:
+          java-version: 11
+          graalvm-version: 20.1.0
+          native-image: true
+        run: |
+          cp ./bam-cmd/target/classes/META-INF/native-image/picocli-generated/reflect-config.json .
+          native-image -jar ./bam-cmd/target/atlantool.jar
+
       - name: Compute variables
         id: vars
         run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
 
       - name: Create release
-        id: create_release
+        id: create-release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -48,13 +59,25 @@ jobs:
           release_name: Release ${{ steps.vars.outputs.sha_short }}
           draft: false
           prerelease: false
-      - name: Upload Release Asset
-        id: upload-release-asset
+
+      - name: Upload JAR file
+        id: upload-jar-file
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
           asset_path: ./bam-cmd/target/atlantool.jar
           asset_name: atlantool.jar
           asset_content_type: application/jar
+
+      - name: Upload native image
+        id: upload-native-image
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-release.outputs.upload_url }}
+          asset_path: ./atlantool
+          asset_name: atlantool-linux-x64
+          asset_content_type: application/octet-stream
