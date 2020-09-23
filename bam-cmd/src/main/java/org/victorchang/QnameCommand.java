@@ -3,6 +3,7 @@ package org.victorchang;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
@@ -10,9 +11,12 @@ import picocli.CommandLine.Parameters;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.victorchang.QnameCommand.LOG;
 
 @Command(
@@ -129,14 +133,34 @@ class IndexCommand implements Callable<Integer> {
     }
 }
 
+class QnameParam {
+    @Option(names = {"-n", "--name"}, description = "QNAME to search for")
+    String qname;
+    @Option(names = {"-f", "--file-name"}, description = "Path to file containing QNAMEs to search for (separated by newline).")
+    Path qnamePath;
+
+    List<String> getQnames() {
+        if (qname != null) {
+            return singletonList(qname);
+        }
+        try {
+            return Files.readAllLines(qnamePath);
+        } catch (Exception e) {
+            LOG.error("Could not read file : {}", qnamePath, e);
+            return emptyList();
+        }
+    }
+}
+
 @Command(name = "view")
 class ViewCommand implements Callable<Integer> {
-    @Parameters(paramLabel = "bam-file", description = "Path to the BAM file")
+    @Parameters(index = "0", paramLabel = "bam-file", description = "Path to the BAM file")
     Path bamPath;
-    @Parameters(paramLabel = "qname", description = "QNAME to search for")
-    String qname;
 
-    @Option(names = {"-i", "--index-path"}, description = "Index directory.")
+    @ArgGroup(multiplicity = "1", heading = "One of qname or file containing qnames")
+    QnameParam qnameParam;
+
+    @Option(names = {"-i", "--index-path"}, description = "Index directory")
     Path indexDirectory;
     @Option(names = {"-h", "--header"}, description = "Include header in SAM output", defaultValue = "false")
     boolean includeHeader;
@@ -168,7 +192,10 @@ class ViewCommand implements Callable<Integer> {
         SamPrintingHandler handler = new SamPrintingHandler(System.out, includeHeader);
         QnameSearcher searcher = new QnameSearcher(qnamePosReader, bamRecordReader, handler);
 
-        searcher.search(bamPath, indexDirectory, qname);
+        // TODO: Optimize searching for multiple qnames
+        for (String qname : qnameParam.getQnames()) {
+            searcher.search(bamPath, indexDirectory, qname);
+        }
         handler.finish();
 
         long finish = System.nanoTime();
