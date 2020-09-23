@@ -34,6 +34,10 @@ jobs:
       - name: Build project
         run: mvn -B clean package
 
+      - name: Compute variables
+        id: vars
+        run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+
       - name: Create release
         id: create_release
         uses: actions/create-release@v1
