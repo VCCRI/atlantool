@@ -5,6 +5,7 @@ import org.apache.commons.compress.utils.CountingOutputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.zip.Deflater;
 import java.util.zip.GZIPOutputStream;
 
 public class GzipConcatenatedOutputStream extends OutputStream {
@@ -76,7 +77,15 @@ public class GzipConcatenatedOutputStream extends OutputStream {
                 flush();
             }
         };
-        OutputStream gzipOutputStream = new GZIPOutputStream(compressedStream);
+        OutputStream gzipOutputStream = new ConfigurableGZIPOutputStream(compressedStream);
         uncompressedStream = new CountingOutputStream(new BufferedOutputStream(gzipOutputStream, FILE_BUFF_SIZE));
+    }
+
+    static class ConfigurableGZIPOutputStream extends GZIPOutputStream {
+
+        public ConfigurableGZIPOutputStream(OutputStream out) throws IOException {
+            super(out);
+            def.setLevel(Deflater.BEST_COMPRESSION);
+        }
     }
 }

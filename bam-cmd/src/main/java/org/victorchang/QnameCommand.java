@@ -55,8 +55,10 @@ class IndexCommand implements Callable<Integer> {
             System.err.println(bamPath + " not found.");
             return -1;
         }
-        if (!Files.isDirectory(indexDirectory)) {
-            System.err.println(indexDirectory + " not found.");
+        if (!Files.exists(indexDirectory)) {
+            Files.createDirectory(indexDirectory);
+        } else {
+            System.err.println(indexDirectory + " already exists");
             return -1;
         }
         if (tempDirectory == null) {
