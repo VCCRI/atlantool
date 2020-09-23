@@ -22,6 +22,12 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      - uses: ayltai/setup-graalvm@v1
+        with:
+          java-version: 11
+          graalvm-version: 20.1.0
+          native-image: true
+
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - name: Checkout code
         uses: actions/checkout@v2
@@ -36,11 +42,6 @@ jobs:
 
       - name: Build native image
         id: build-native-image
-        uses: [actions/checkout@v2, ayltai/setup-graalvm@v1]
-        with:
-          java-version: 11
-          graalvm-version: 20.1.0
-          native-image: true
         run: |
           cp ./bam-cmd/target/classes/META-INF/native-image/picocli-generated/reflect-config.json .
           native-image -jar ./bam-cmd/target/atlantool.jar
