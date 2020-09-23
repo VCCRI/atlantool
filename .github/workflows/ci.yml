@@ -1,6 +1,6 @@
 # See https://docs.github.com/en/actions/language-and-framework-guides/building-and-testing-java-with-maven
 
-name: ci
+name: CI
 
 on: [push]
 
