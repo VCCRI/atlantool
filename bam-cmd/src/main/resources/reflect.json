@@ -1,39 +1,63 @@
 [
   {
-    "name" : "org.victorchang.IndexCommand",
-    "allDeclaredConstructors" : true,
-    "allPublicConstructors" : true,
-    "allDeclaredMethods" : true,
-    "allPublicMethods" : true,
-    "fields" : [
-      { "name" : "bamPath" },
-      { "name" : "bytesLimit" },
-      { "name" : "debug" },
-      { "name" : "indexDirectory" },
-      { "name" : "sortBufferSize" },
-      { "name" : "tempDirectory" },
-      { "name" : "threadCount" }
+    "name": "org.victorchang.IndexCommand",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "fields": [
+      {
+        "name": "bamPath"
+      },
+      {
+        "name": "bytesLimit"
+      },
+      {
+        "name": "debug"
+      },
+      {
+        "name": "indexDirectory"
+      },
+      {
+        "name": "sortBufferSize"
+      },
+      {
+        "name": "tempDirectory"
+      },
+      {
+        "name": "threadCount"
+      }
     ]
   },
   {
-    "name" : "org.victorchang.QnameCommand",
-    "allDeclaredConstructors" : true,
-    "allPublicConstructors" : true,
-    "allDeclaredMethods" : true,
-    "allPublicMethods" : true
+    "name": "org.victorchang.QnameCommand",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true
   },
   {
-    "name" : "org.victorchang.ViewCommand",
-    "allDeclaredConstructors" : true,
-    "allPublicConstructors" : true,
-    "allDeclaredMethods" : true,
-    "allPublicMethods" : true,
-    "fields" : [
-      { "name" : "bamPath" },
-      { "name" : "debug" },
-      { "name" : "includeHeader" },
-      { "name" : "indexPath" },
-      { "name" : "qname" }
+    "name": "org.victorchang.ViewCommand",
+    "allDeclaredConstructors": true,
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true,
+    "allPublicMethods": true,
+    "fields": [
+      {
+        "name": "bamPath"
+      },
+      {
+        "name": "debug"
+      },
+      {
+        "name": "includeHeader"
+      },
+      {
+        "name": "indexPath"
+      },
+      {
+        "name": "qname"
+      }
     ]
   }
 ]

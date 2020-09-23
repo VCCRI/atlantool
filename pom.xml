@@ -17,7 +17,6 @@
     <properties>
         <guava.version>29.0-jre</guava.version>
         <slf4j-api.version>1.7.25</slf4j-api.version>
-        <logback-classic.version>1.2.3</logback-classic.version>
         <commons-compress.version>1.20</commons-compress.version>
         <commons-lang3.version>3.11</commons-lang3.version>
 
@@ -51,9 +50,9 @@
                 <version>${slf4j-api.version}</version>
             </dependency>
             <dependency>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-classic</artifactId>
-                <version>${logback-classic.version}</version>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-simple</artifactId>
+                <version>${slf4j-api.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.apache.commons</groupId>
