@@ -10,6 +10,7 @@ import picocli.CommandLine.Parameters;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.concurrent.Callable;
 
 import static org.victorchang.QnameCommand.LOG;
@@ -32,7 +33,11 @@ public class QnameCommand {
 
     static Path getDefaultIndexPath(Path bamPath) {
         final String fileName = bamPath.getFileName().toString();
-        return Path.of(bamPath.getParent().toString(), fileName + ".qindex");
+        final String parent = Optional
+                .ofNullable(bamPath.getParent())
+                .map(Path::toString)
+                .orElse("");
+        return Path.of(parent, fileName + ".qindex");
     }
 }
 
