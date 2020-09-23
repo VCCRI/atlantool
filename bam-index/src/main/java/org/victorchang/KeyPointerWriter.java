@@ -27,11 +27,15 @@ public class KeyPointerWriter {
         List<KeyPointer> metadata = new ArrayList<>();
 
         long count = 0;
+        KeyPointer lastItem = null;
+        long coffset = 0;
+        int uoffset = 0;
         Iterable<KeyPointer> iterable = stream::iterator;
         for (KeyPointer x : iterable) {
+            lastItem = x;
             if (count >= blockSize) {
-                long coffset = concatenatedStream.getCompressedCount();
-                int uoffset = (int) concatenatedStream.getUncompressedCount();
+                coffset = concatenatedStream.getCompressedCount();
+                uoffset = (int) concatenatedStream.getUncompressedCount();
                 if (uoffset < 1 << 16) { // if uoffset == 1 << 16 we will write next item
                     metadata.add(new KeyPointer(coffset, uoffset, x.getKey(), x.getKey().length));
                     count = 0;
@@ -43,6 +47,10 @@ public class KeyPointerWriter {
             count++;
         }
         dataOutput.close();
+
+        if (count > 0) {
+            metadata.add(new KeyPointer(coffset, uoffset, lastItem.getKey(), lastItem.getKey().length));
+        }
 
         return metadata;
     }
