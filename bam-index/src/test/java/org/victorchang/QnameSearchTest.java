@@ -1,6 +1,9 @@
 package org.victorchang;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +40,27 @@ public class QnameSearchTest {
 
         BamRecordReader bamRecordReader = new DefaultBamRecordReader(new EfficientBamRecordParser());
         KeyPointerReader keyPointerReader = new KeyPointerReader();
-        searcher = new QnameSearcher(keyPointerReader, bamRecordReader, new DebuggingHandler());
+        searcher = new QnameSearcher(keyPointerReader, bamRecordReader, new BamRecordHandler() {
+            @Override
+            public void onHeader(SAMFileHeader header) {
+            }
+
+            @Override
+            public void onAlignmentPosition(long blockPos, int offset) {
+            }
+
+            @Override
+            public void onQname(byte[] qnameBuffer, int qnameLen) {
+            }
+
+            @Override
+            public void onSequence(byte[] seqBuffer, int seqLen) {
+            }
+
+            @Override
+            public void onAlignmentRecord(SAMRecord record) {
+            }
+        });
     }
 
     @Test
@@ -67,22 +90,37 @@ public class QnameSearchTest {
         found = searcher.search(bamFile, indexFolder, "SOLEXA-1GA-1_4_FC20ENL:7:9:99:545");
         assertThat(found, equalTo(2));
 
+        // QNAME on 2 adjacent blocks
+        found = searcher.search(bamFile, indexFolder, "SOLEXA-1GA-1_1_FC20EMA:7:100:434:814");
+        assertThat(found, equalTo(2));
+    }
+
+    @Ignore("take too long to run")
+    @Test
+    public void searchExhaustiveExample1bTest() throws IOException, URISyntaxException {
+        Path bamFile = Paths.get(ClassLoader.getSystemResource("bam/example1b").toURI());
+        Path indexFolder = Paths.get("target/bam/example1b");
+        Files.createDirectories(indexFolder);
+
+        indexer.index(indexFolder, bamFile, indexFolder);
+
+        Path pathLevel0 = indexFolder.resolve("qname.0");
+        FileChannel channelLevel0 = FileChannel.open(pathLevel0, READ);
+        InputStream inputStreamLevel0 = Channels.newInputStream(channelLevel0);
+
         // Exhaustive test
-        Map<byte[], Integer> expectedMap = new LinkedHashMap<>();
+        Map<String, Integer> expectedMap = new LinkedHashMap<>();
         KeyPointerReader keyPointerReader = new KeyPointerReader();
         Iterable<KeyPointer> indexLevel0 = () -> keyPointerReader.read(inputStreamLevel0).iterator();
         for (KeyPointer x : indexLevel0) {
-            expectedMap.compute(x.getKey(), (k, v) -> v == null ? 1 : v + 1);
+            String qname = Ascii7Coder.INSTANCE.decode(x.getKey(), 0, x.getKey().length);
+            expectedMap.compute(qname, (k, v) -> v == null ? 1 : v + 1);
         }
 
-        for (Map.Entry<byte[], Integer> entry : expectedMap.entrySet()) {
-            byte[] key = entry.getKey();
+        for (Map.Entry<String, Integer> entry : expectedMap.entrySet()) {
             Integer expectedMatches = entry.getValue();
-
-            String qname = new String(key);
-            found = searcher.search(bamFile, indexFolder, qname);
-            assertThat("Expected " + expectedMatches + " for name: " + qname, found, equalTo(expectedMatches));
+            int found = searcher.search(bamFile, indexFolder, entry.getKey());
+            assertThat("Expected " + expectedMatches + " for name: " + entry.getKey(), found, equalTo(expectedMatches));
         }
     }
-
 }
