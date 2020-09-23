@@ -65,8 +65,8 @@ class IndexCommand implements Callable<Integer> {
             System.err.println(tempDirectory + " not found.");
             return -1;
         }
-        if (debug) {
-        }
+        java.util.logging.Logger.getLogger("")
+                .setLevel(debug ? java.util.logging.Level.ALL : java.util.logging.Level.SEVERE);
 
         bytesLimit = bytesLimit == 0 ? Long.MAX_VALUE : bytesLimit;
 
@@ -120,8 +120,8 @@ class ViewCommand implements Callable<Integer> {
             System.err.println(indexPath + " not found.");
             return -1;
         }
-        if (debug) {
-        }
+        java.util.logging.Logger.getLogger("")
+                .setLevel(debug ? java.util.logging.Level.ALL : java.util.logging.Level.SEVERE);
 
         long start = System.nanoTime();
 
