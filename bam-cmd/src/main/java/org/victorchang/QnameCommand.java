@@ -1,5 +1,6 @@
 package org.victorchang;
 
+import htsjdk.samtools.SAMSequenceRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -17,6 +18,7 @@ import java.util.concurrent.Callable;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.toList;
 import static org.victorchang.QnameCommand.LOG;
 
 @Command(
@@ -136,7 +138,7 @@ class IndexCommand implements Callable<Integer> {
 class QnameParam {
     @Option(names = {"-n", "--name"}, description = "QNAME to search for")
     String qname;
-    @Option(names = {"-f", "--file-name"}, description = "Path to file containing QNAMEs to search for (separated by newline).")
+    @Option(names = {"-f", "--file-name"}, description = "Path to a file containing QNAMEs to search for (separated by newline).")
     Path qnamePath;
 
     List<String> getQnames() {
@@ -144,10 +146,22 @@ class QnameParam {
             return singletonList(qname);
         }
         try {
-            return Files.readAllLines(qnamePath);
+            return Files.readAllLines(qnamePath)
+                    .stream()
+                    .filter(this::isValidQname)
+                    .collect(toList());
         } catch (Exception e) {
             LOG.error("Could not read file : {}", qnamePath, e);
             return emptyList();
+        }
+    }
+
+    private boolean isValidQname(String qName) {
+        try {
+            SAMSequenceRecord.validateSequenceName(qName);
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 }
