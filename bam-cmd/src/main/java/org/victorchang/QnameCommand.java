@@ -19,7 +19,7 @@ import static org.victorchang.QnameCommand.LOG;
                 IndexCommand.class,
                 ViewCommand.class
         },
-        name = "qname-search",
+        name = "atlantool",
         description = "Search BAM file by QNAME"
 )
 public class QnameCommand {
@@ -29,46 +29,49 @@ public class QnameCommand {
         int exitCode = new CommandLine(new QnameCommand()).execute(args);
         System.exit(exitCode);
     }
+
+    static Path getDefaultIndexPath(Path bamPath) {
+        final String fileName = bamPath.getFileName().toString();
+        return Path.of(bamPath.getParent().toString(), fileName + ".qindex");
+    }
 }
 
 @Command(name = "index")
 class IndexCommand implements Callable<Integer> {
     @Parameters(paramLabel = "bam-file", description = "Path to the BAM file")
     Path bamPath;
-    @Parameters(paramLabel = "index-path", description = "Directory to store index files")
+
+    @Option(names = {"-i", "--index-path"}, description = "Directory to store index files. By default uses the same directory as bam file.")
     Path indexDirectory;
     @Option(names = "--thread-count", description = "Number of threads used for sorting", defaultValue = "1")
     int threadCount;
     @Option(names = "--sort-buffer-size", description = "Maximum number of records per buffer used for sorting", defaultValue = "500000")
     int sortBufferSize;
-    @Option(names = "--limit-bytes", description = "Only read and index first given bytes")
+    @Option(names = {"-l", "--limit-bytes"}, description = "Only read and index first given bytes")
     long bytesLimit;
-    @Option(names = "--temporary-path", description = "Directory to store temporary files for sorting")
+    @Option(names = {"-t", "--temporary-path"}, description = "Directory to store temporary files for sorting. By default uses the index directory.")
     Path tempDirectory;
-    @Option(names = "--debug", description = "Switch on debugging output", defaultValue = "false")
-    boolean debug;
+    @Option(names = {"-v", "--verbose" }, description = "Switch on verbose output", defaultValue = "false")
+    boolean verbose;
 
     @Override
-    public Integer call() throws Exception {
+    public Integer call() {
+        java.util.logging.Logger.getLogger("")
+                .setLevel(verbose ? java.util.logging.Level.ALL : java.util.logging.Level.SEVERE);
+
         if (!Files.isRegularFile(bamPath)) {
             System.err.println(bamPath + " not found.");
             return -1;
         }
-        if (!Files.exists(indexDirectory)) {
-            Files.createDirectory(indexDirectory);
-        } else {
-            System.err.println(indexDirectory + " already exists");
+        if (!setIndexDirectory(bamPath)) {
             return -1;
         }
+
         if (tempDirectory == null) {
             tempDirectory = indexDirectory;
-        }
-        if (!Files.isDirectory(tempDirectory)) {
-            System.err.println(tempDirectory + " not found.");
+        } else if (!checkDirectory(tempDirectory)) {
             return -1;
         }
-        java.util.logging.Logger.getLogger("")
-                .setLevel(debug ? java.util.logging.Level.ALL : java.util.logging.Level.SEVERE);
 
         bytesLimit = bytesLimit == 0 ? Long.MAX_VALUE : bytesLimit;
 
@@ -90,12 +93,34 @@ class IndexCommand implements Callable<Integer> {
 
             LOG.info("Create index completed in {}", (finish - start) / 1000_000 + "ms");
         } catch (IOException e) {
-            LOG.info("Failed to index", e);
+            LOG.error("Failed to index", e);
             return -1;
         } finally {
             indexer.shutDown();
         }
         return 0;
+    }
+
+    private boolean setIndexDirectory(Path bamPath) {
+        if (indexDirectory == null) {
+            indexDirectory = QnameCommand.getDefaultIndexPath(bamPath);
+        }
+        return checkDirectory(indexDirectory);
+    }
+
+    private boolean checkDirectory(Path path) {
+        if (!Files.exists(path)) {
+            try {
+                Files.createDirectory(path);
+            } catch (IOException e) {
+                LOG.error("Could not create directory: {}. Error : {}", path, e.getMessage());
+                return false;
+            }
+        } else {
+            LOG.error("{} already exists.", path);
+            return false;
+        }
+        return true;
     }
 }
 
@@ -103,27 +128,33 @@ class IndexCommand implements Callable<Integer> {
 class ViewCommand implements Callable<Integer> {
     @Parameters(paramLabel = "bam-file", description = "Path to the BAM file")
     Path bamPath;
-    @Parameters(paramLabel = "index-path", description = "Directory containing index files")
-    Path indexPath;
     @Parameters(paramLabel = "qname", description = "QNAME to search for")
     String qname;
-    @Option(names = "-h", description = "Include header in SAM output", defaultValue = "false")
+
+    @Option(names = {"-i", "--index-path"}, description = "Index directory.")
+    Path indexDirectory;
+    @Option(names = {"-h", "--header"}, description = "Include header in SAM output", defaultValue = "false")
     boolean includeHeader;
-    @Option(names = "--debug", description = "Switch on debugging output", defaultValue = "false")
-    boolean debug;
+    @Option(names = {"-v", "--verbose" }, description = "Switch on verbose output", defaultValue = "false")
+    boolean verbose;
 
     @Override
     public Integer call() throws Exception {
+        java.util.logging.Logger.getLogger("")
+                .setLevel(verbose ? java.util.logging.Level.ALL : java.util.logging.Level.SEVERE);
+
         if (!Files.isRegularFile(bamPath)) {
             System.err.println(bamPath + " not found.");
             return -1;
         }
-        if (!Files.isDirectory(indexPath)) {
-            System.err.println(indexPath + " not found.");
+
+        if (indexDirectory == null) {
+            indexDirectory = QnameCommand.getDefaultIndexPath(bamPath);
+        }
+        if (!Files.isDirectory(indexDirectory)) {
+            System.err.println(indexDirectory + " not found.");
             return -1;
         }
-        java.util.logging.Logger.getLogger("")
-                .setLevel(debug ? java.util.logging.Level.ALL : java.util.logging.Level.SEVERE);
 
         long start = System.nanoTime();
 
@@ -132,7 +163,7 @@ class ViewCommand implements Callable<Integer> {
         SamPrintingHandler handler = new SamPrintingHandler(System.out, includeHeader);
         QnameSearcher searcher = new QnameSearcher(qnamePosReader, bamRecordReader, handler);
 
-        searcher.search(bamPath, indexPath, qname);
+        searcher.search(bamPath, indexDirectory, qname);
         handler.finish();
 
         long finish = System.nanoTime();
