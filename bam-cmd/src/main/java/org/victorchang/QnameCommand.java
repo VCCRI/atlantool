@@ -1,8 +1,11 @@
 package org.victorchang;
 
+import htsjdk.samtools.SAMSequenceRecord;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
@@ -10,9 +13,14 @@ import picocli.CommandLine.Parameters;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
+import static java.util.stream.Collectors.partitioningBy;
 import static org.victorchang.QnameCommand.LOG;
 
 @Command(
@@ -129,14 +137,54 @@ class IndexCommand implements Callable<Integer> {
     }
 }
 
+class QnameParam {
+    @Option(names = {"-n", "--name"}, description = "QNAME to search for")
+    String qname;
+    @Option(names = {"-f", "--file-name"}, description = "Path to a file containing QNAMEs to search for (separated by newline).")
+    Path qnamePath;
+
+    List<String> getQnames() throws IllegalArgumentException {
+        if (qname != null) {
+            return singletonList(qname);
+        }
+        final Map<Boolean, List<String>> qnames = readFile()
+                    .stream()
+                    .filter(StringUtils::isNotBlank)
+                    .collect(partitioningBy(this::isValidQname));
+            final List<String> invalidQnames = qnames.getOrDefault(false, emptyList());
+            if (!invalidQnames.isEmpty()) {
+                throw new IllegalArgumentException("File " + qnamePath + " contains invalid qnames : " + invalidQnames);
+            }
+            return qnames.get(true);
+    }
+
+    private List<String> readFile() {
+        try {
+            return Files.readAllLines(qnamePath);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Could not read file: " +  qnamePath, e);
+        }
+    }
+
+    private boolean isValidQname(String qName) {
+        try {
+            SAMSequenceRecord.validateSequenceName(qName);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+}
+
 @Command(name = "view")
 class ViewCommand implements Callable<Integer> {
-    @Parameters(paramLabel = "bam-file", description = "Path to the BAM file")
+    @Parameters(index = "0", paramLabel = "bam-file", description = "Path to the BAM file")
     Path bamPath;
-    @Parameters(paramLabel = "qname", description = "QNAME to search for")
-    String qname;
 
-    @Option(names = {"-i", "--index-path"}, description = "Index directory.")
+    @ArgGroup(multiplicity = "1", heading = "One of qname or file containing qnames")
+    QnameParam qnameParam;
+
+    @Option(names = {"-i", "--index-path"}, description = "Index directory")
     Path indexDirectory;
     @Option(names = {"-h", "--header"}, description = "Include header in SAM output", defaultValue = "false")
     boolean includeHeader;
@@ -168,7 +216,17 @@ class ViewCommand implements Callable<Integer> {
         SamPrintingHandler handler = new SamPrintingHandler(System.out, includeHeader);
         QnameSearcher searcher = new QnameSearcher(qnamePosReader, bamRecordReader, handler);
 
-        searcher.search(bamPath, indexDirectory, qname);
+        final List<String> qnames;
+        try {
+            qnames = qnameParam.getQnames();
+        } catch (IllegalArgumentException e) {
+            LOG.error(e.getMessage());
+            return -1;
+        }
+        // TODO: Optimize searching for multiple qnames
+        for (String qname : qnames) {
+            searcher.search(bamPath, indexDirectory, qname);
+        }
         handler.finish();
 
         long finish = System.nanoTime();

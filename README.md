@@ -7,27 +7,42 @@ Tool for:
 
 ## Usage
 
-The tool can be accessed as JAR file or as a native Linux executable. 
+The tool can be accessed as JAR file (`java -jar atlantool.jar`) or as a 
+native Linux executable (`atlantool-linux-x64`). 
 Check out [releases section] to get the latest build.
 
+The command line tool provides two sub commands: `index` and `view` for the operations
+mentioned above. The basic usage format is:
+```
+$ atlantool-linux-x64 index <bam-path>
+
+$ atlantool-linux-x64 view <bam-path> -n <qname-to-search>
+or
+$ atlantool-linux-x64 view <bam-path> -f <file-containing-qnames>
+```
+
+There are advanced options available for each sub command, detailed help
+can be seen by executing the sub command.
+
+### Detailed example
 #### Build the index
 
 The following command indexes `1G.bam` file and places index files near BAM file. Please note, that the process takes time on large BAM files.
 ```shell script
-$ ./atlantool-linux-x64 index 1G.bam --thread-count=8
+$ atlantool-linux-x64 index 1G.bam --thread-count=8
 ```
 
 #### Search by QNAME
 
 After the index has been built successfully, search requests can be executed on a QNAME string.
 ```shell script
-$ ./atlantool-linux-x64 view 1G.bam SOLEXA-1GA-1_0047_FC62472:5:52:15203:7914#0
+$ atlantool-linux-x64 view 1G.bam -n SOLEXA-1GA-1_0047_FC62472:5:52:15203:7914#0
 SOLEXA-1GA-1_0047_FC62472:5:52:15203:7914#0	0	chr1	10158	25	36M	*	0	0	AACCCTAACCCTAACCCTAACCTAACCCTAACCCTA	ED?EEGDG?EEGGG4B@ABB@BD:49+=:=@;=;;D	X0:i:1	MD:Z:36	NM:i:0
 ```
 
 The output follows SAM specification, and it should be recognised by `samtools`.
 ```shell script
-$ ./atlantool-linux-x64 view 1G.bam SOLEXA-1GA-1_0047_FC62472:5:52:15203:7914#0 -h | samtools view
+$ atlantool-linux-x64 view 1G.bam -n SOLEXA-1GA-1_0047_FC62472:5:52:15203:7914#0 -h | samtools view
 SOLEXA-1GA-1_0047_FC62472:5:52:15203:7914#0	0	chr1	10158	25	36M	*	0	0	AACCCTAACCCTAACCCTAACCTAACCCTAACCCTA	ED?EEGDG?EEGGG4B@ABB@BD:49+=:=@;=;;D	X0:i:1	MD:Z:36	NM:i:0
 ```
 
