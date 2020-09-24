@@ -60,12 +60,12 @@ xx xx xx xx xx xx xx xx: 8 bytes: virtual offset (pointer)
 
 The pointer is encoded as `coffset | uoffset << 48`.
 
-### `qname.0`
+### `qname.index.bgz`
 
 This file contains all the QNAME to virtual offset mappings, sorted by QNAME.
 The offset is the position of the corresponding record in the BAM file.
 
-### `qname.1`
+### `qname.data.bgz`
 
 This file contains a subset of QNAMEs. The pointer is an offset into
 `qname.0` for where the first record with that QNAME is stored. Because
@@ -76,8 +76,8 @@ a QNAME that is equal or greater.
 
 Given the above index files, a search for `input` is performed like this:
 
-1. Iterate through `qname.v[?].index.bgz` to find the last record where `QNAME <= input`.
-2. Starting from the offset from 1, iterate through `qname.v[?].data.bgz` to find `QNAME == input` records.
+1. Iterate through `qname.index.bgz` to find the last record where `QNAME <= input`.
+2. Starting from the offset from 1, iterate through `qname.data.bgz` to find `QNAME == input` records.
    Stop when we hit `QNAME > input` (we won't find more records).
 3. Using the offsets from 2, look up the records in the BAM file.
 
