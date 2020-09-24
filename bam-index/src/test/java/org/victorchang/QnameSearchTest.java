@@ -7,7 +7,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.victorchang.QnameSearcher.DebuggingHandler;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,7 +17,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -75,24 +76,49 @@ public class QnameSearchTest {
 
         log.info("Create index of {} records completed in {}", recordCount, (finish - start) / 1000_000 + "ms");
 
-        Path pathLevel0 = indexFolder.resolve("qname.0");
-        FileChannel channelLevel0 = FileChannel.open(pathLevel0, READ);
-        InputStream inputStreamLevel0 = Channels.newInputStream(channelLevel0);
-
         // Test some specific keys
-        int found = searcher.search(bamFile, indexFolder, "SOLEXA-1GA-1_1_FC20EMA:7:100:100:372");
-        assertThat(found, equalTo(2));
+        List<Long> pointers = searcher.getPointersForQname(indexFolder, Set.of("SOLEXA-1GA-1_1_FC20EMA:7:100:100:372"));
+        assertThat(pointers.size(), equalTo(2));
 
-        found = searcher.search(bamFile, indexFolder, "SOLEXA-1GA-1_1_FC20EMA:7:233:258:501");
-        assertThat(found, equalTo(2));
+        pointers = searcher.getPointersForQname(indexFolder, Set.of("SOLEXA-1GA-1_1_FC20EMA:7:233:258:501"));
+        assertThat(pointers.size(), equalTo(2));
 
         // Last QNAME (in sort order)
-        found = searcher.search(bamFile, indexFolder, "SOLEXA-1GA-1_4_FC20ENL:7:9:99:545");
-        assertThat(found, equalTo(2));
+        pointers = searcher.getPointersForQname(indexFolder, Set.of("SOLEXA-1GA-1_4_FC20ENL:7:9:99:545"));
+        assertThat(pointers.size(), equalTo(2));
 
         // QNAME on 2 adjacent blocks
-        found = searcher.search(bamFile, indexFolder, "SOLEXA-1GA-1_1_FC20EMA:7:100:434:814");
-        assertThat(found, equalTo(2));
+        pointers = searcher.getPointersForQname(indexFolder, Set.of("SOLEXA-1GA-1_1_FC20EMA:7:100:434:814"));
+        assertThat(pointers.size(), equalTo(2));
+    }
+
+    @Test
+    public void searchMultipleQnames() throws IOException, URISyntaxException {
+        Path bamFile = Paths.get(ClassLoader.getSystemResource("bam/example1b").toURI());
+        Path indexFolder = Paths.get("target/bam/example1b");
+        Files.createDirectories(indexFolder);
+
+        long start = System.nanoTime();
+        long recordCount = indexer.index(indexFolder, bamFile, indexFolder);
+        long finish = System.nanoTime();
+
+        log.info("Create index of {} records completed in {}", recordCount, (finish - start) / 1000_000 + "ms");
+
+        // Test keys at different blocks
+        List<Long> pointers = searcher.getPointersForQname(indexFolder, Set.of("SOLEXA-1GA-1_1_FC20EMA:7:100:100:372",
+                "SOLEXA-1GA-1_1_FC20EMA:7:233:258:501", "SOLEXA-1GA-1_4_FC20ENL:7:9:99:545"));
+        assertThat(pointers.size(), equalTo(6));
+
+        pointers = searcher.getPointersForQname(indexFolder, Set.of("SOLEXA-1GA-1_1_FC20EMA:7:100:100:448",
+                "SOLEXA-1GA-1_1_FC20EMA:7:100:101:206"));
+        assertThat(pointers.size(), equalTo(4));
+
+        pointers = searcher.getPointersForQname(indexFolder, Set.of("SOLEXA-1GA-1_1_FC20EMA:7:100:100:372",
+                "SOLEXA-1GA-1_1_FC20EMA:7:233:258:501", "SOLEXA-1GA-1_1_FC20EMA:7:100:100:448"));
+        assertThat(pointers.size(), equalTo(6));
+
+        pointers = searcher.getPointersForQname(indexFolder, Set.of());
+        assertThat(pointers.size(), equalTo(0));
     }
 
     @Ignore("take too long to run")
@@ -119,8 +145,8 @@ public class QnameSearchTest {
 
         for (Map.Entry<String, Integer> entry : expectedMap.entrySet()) {
             Integer expectedMatches = entry.getValue();
-            int found = searcher.search(bamFile, indexFolder, entry.getKey());
-            assertThat("Expected " + expectedMatches + " for name: " + entry.getKey(), found, equalTo(expectedMatches));
+            final List<Long> pointers = searcher.getPointersForQname(indexFolder, Set.of(entry.getKey()));
+            assertThat("Expected " + expectedMatches + " for name: " + entry.getKey(), pointers.size(), equalTo(expectedMatches));
         }
     }
 }

@@ -16,11 +16,11 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.partitioningBy;
+import static java.util.stream.Collectors.toSet;
 import static org.victorchang.QnameCommand.LOG;
 
 @Command(
@@ -151,15 +151,15 @@ class QnameParam {
     @Option(names = {"-f", "--file-name"}, description = "Path to a file containing QNAMEs to search for (separated by newline).")
     Path qnamePath;
 
-    List<String> getQnames() throws IllegalArgumentException {
+    Set<String> getQnames() throws IllegalArgumentException {
         if (qname != null) {
-            return singletonList(qname);
+            return Set.of(qname);
         }
-        final Map<Boolean, List<String>> qnames = readFile()
+        final Map<Boolean, Set<String>> qnames = readFile()
                     .stream()
                     .filter(StringUtils::isNotBlank)
-                    .collect(partitioningBy(this::isValidQname));
-            final List<String> invalidQnames = qnames.getOrDefault(false, emptyList());
+                    .collect(partitioningBy(this::isValidQname, toSet()));
+            final Set<String> invalidQnames = qnames.getOrDefault(false, Set.of());
             if (!invalidQnames.isEmpty()) {
                 throw new IllegalArgumentException("File " + qnamePath + " contains invalid qnames : " + invalidQnames);
             }
@@ -224,16 +224,14 @@ class ViewCommand implements Callable<Integer> {
         SamPrintingHandler handler = new SamPrintingHandler(System.out, includeHeader);
         QnameSearcher searcher = new QnameSearcher(qnamePosReader, bamRecordReader, handler);
 
-        final List<String> qnames;
+        final Set<String> qnames;
         try {
             qnames = qnameParam.getQnames();
         } catch (IllegalArgumentException e) {
             LOG.error(e.getMessage());
             return -1;
         }
-        for (String qname : qnames) {
-            searcher.search(bamPath, indexDirectory, qname);
-        }
+        searcher.search(bamPath, indexDirectory, qnames);
         handler.finish();
 
         long finish = System.nanoTime();
