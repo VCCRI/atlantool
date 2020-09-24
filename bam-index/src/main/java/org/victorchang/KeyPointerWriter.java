@@ -8,11 +8,23 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
+import java.util.zip.Deflater;
 
 /**
  * Write a stream of {@link KeyPointer} into a concatenated gzip output.
  */
 public class KeyPointerWriter {
+
+    private final int compressionLevel;
+
+    public KeyPointerWriter(int compressionLevel) {
+        this.compressionLevel = compressionLevel;
+    }
+
+    public KeyPointerWriter() {
+        this(Deflater.DEFAULT_COMPRESSION);
+    }
+
     public List<KeyPointer> write(OutputStream outputStream, Stream<KeyPointer> stream) throws IOException {
         return write(outputStream, stream, Long.MAX_VALUE);
     }
@@ -20,7 +32,7 @@ public class KeyPointerWriter {
     @SuppressWarnings("UnstableApiUsage")
     public List<KeyPointer> write(OutputStream outputStream, Stream<KeyPointer> stream, long blockSize) throws IOException {
         GzipConcatenatedOutputStream concatenatedStream =
-                new GzipConcatenatedOutputStream(outputStream, 1 << 16);
+                new GzipConcatenatedOutputStream(outputStream, 1 << 16, compressionLevel);
 
         LittleEndianDataOutputStream dataOutput = new LittleEndianDataOutputStream(concatenatedStream);
 
