@@ -121,14 +121,14 @@ class IndexCommand implements Callable<Integer> {
             indexDirectory = QnameCommand.getDefaultIndexPath(bamPath);
         }
         if (createDirectory(indexDirectory)) {
-            Path indexLevel1 = indexDirectory.resolve(IndexVersion.VERSION0.fileName("1"));
-            Path indexLevel0 = indexDirectory.resolve(IndexVersion.VERSION0.fileName("0"));
+            Path indexLevel1 = indexDirectory.resolve(IndexVersion.LATEST.fileName("1"));
+            Path indexLevel0 = indexDirectory.resolve(IndexVersion.LATEST.fileName("0"));
             if (Files.exists(indexLevel1) || Files.exists(indexLevel0)) {
                 if (!force) {
-                    LOG.error("Index '{}' exists in '{}'.", IndexVersion.VERSION0, indexDirectory);
+                    LOG.error("Index '{}' exists in '{}'.", IndexVersion.LATEST, indexDirectory);
                     return false;
                 } else {
-                    LOG.error("Index '{}' exists in '{}', overwrite it", IndexVersion.VERSION0, indexDirectory);
+                    LOG.error("Index '{}' exists in '{}', overwrite it", IndexVersion.LATEST, indexDirectory);
                     return true;
                 }
             }
@@ -222,11 +222,11 @@ class ViewCommand implements Callable<Integer> {
             return -1;
         }
 
-        Path indexLevel1 = indexDirectory.resolve(IndexVersion.VERSION0.fileName("1"));
-        Path indexLevel0 = indexDirectory.resolve(IndexVersion.VERSION0.fileName("0"));
+        Path indexLevel1 = indexDirectory.resolve(IndexVersion.LATEST.fileName("1"));
+        Path indexLevel0 = indexDirectory.resolve(IndexVersion.LATEST.fileName("0"));
 
         if (!Files.exists(indexLevel1) || !Files.exists(indexLevel0)) {
-            System.err.printf("Index '%s' doesn't exists in '%s'.\n", IndexVersion.VERSION0, indexDirectory);
+            System.err.printf("Index '%s' doesn't exists in '%s'.\n", IndexVersion.LATEST, indexDirectory);
             return -1;
         }
 
