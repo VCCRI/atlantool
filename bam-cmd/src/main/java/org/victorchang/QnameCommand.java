@@ -54,7 +54,7 @@ class IndexCommand implements Callable<Integer> {
     @Parameters(paramLabel = "bam-file", description = "Path to the BAM file")
     Path bamPath;
 
-    @Option(names = {"-i", "--index-path"}, description = "Directory to store index files. By default uses a directory name that starts with the BAM file name (so stored next to it).")
+    @Option(names = {"-i", "--index-path"}, description = "Directory to store index files. By default uses a directory name that starts with the BAM file name (so stored next to it)")
     Path indexDirectory;
     @Option(names = "--thread-count", description = "Number of threads used for sorting", defaultValue = "1")
     int threadCount;
@@ -62,10 +62,12 @@ class IndexCommand implements Callable<Integer> {
     int sortBufferSize;
     @Option(names = {"-l", "--limit-bytes"}, description = "Only read and index first given bytes")
     long bytesLimit;
-    @Option(names = {"-t", "--temporary-path"}, description = "Directory to store temporary files for sorting. By default uses the index directory.")
+    @Option(names = {"-t", "--temporary-path"}, description = "Directory to store temporary files for sorting. By default uses the index path")
     Path tempDirectory;
     @Option(names = {"-v", "--verbose" }, description = "Switch on verbose output", defaultValue = "false")
     boolean verbose;
+    @Option(names = {"--force" }, description = "Overwrite existing index", defaultValue = "false")
+    boolean force;
 
     @Override
     public Integer call() {
@@ -76,13 +78,13 @@ class IndexCommand implements Callable<Integer> {
             System.err.println(bamPath + " not found.");
             return -1;
         }
-        if (!setIndexDirectory(bamPath)) {
+        if (!createIndexDirectory(bamPath, force)) {
             return -1;
         }
 
         if (tempDirectory == null) {
             tempDirectory = indexDirectory;
-        } else if (!checkDirectory(tempDirectory)) {
+        } else if (!createDirectory(tempDirectory, force)) {
             return -1;
         }
 
@@ -114,14 +116,14 @@ class IndexCommand implements Callable<Integer> {
         return 0;
     }
 
-    private boolean setIndexDirectory(Path bamPath) {
+    private boolean createIndexDirectory(Path bamPath, boolean force) {
         if (indexDirectory == null) {
             indexDirectory = QnameCommand.getDefaultIndexPath(bamPath);
         }
-        return checkDirectory(indexDirectory);
+        return createDirectory(indexDirectory, force);
     }
 
-    private boolean checkDirectory(Path path) {
+    private boolean createDirectory(Path path, boolean force) {
         if (!Files.exists(path)) {
             try {
                 Files.createDirectory(path);
@@ -130,8 +132,12 @@ class IndexCommand implements Callable<Integer> {
                 return false;
             }
         } else {
-            LOG.error("{} already exists.", path);
-            return false;
+            if (force) {
+                LOG.warn("{} already exists, overwrite it.", path);
+            } else {
+                LOG.error("{} already exists.", path);
+            }
+            return force;
         }
         return true;
     }
@@ -223,7 +229,6 @@ class ViewCommand implements Callable<Integer> {
             LOG.error(e.getMessage());
             return -1;
         }
-        // TODO: Optimize searching for multiple qnames
         for (String qname : qnames) {
             searcher.search(bamPath, indexDirectory, qname);
         }
