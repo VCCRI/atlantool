@@ -30,7 +30,7 @@ public class QnameSearcher {
     }
 
     public int search(Path bamFile, Path indexFolder, String qname) throws IOException {
-        Path pathLevel1 = indexFolder.resolve(IndexVersion.LATEST.fileName("1"));
+        Path pathLevel1 = indexFolder.resolve(IndexVersion.LATEST.fileName("index"));
         FileChannel channelLevel1 = FileChannel.open(pathLevel1, READ);
         InputStream inputStreamLevel1 = Channels.newInputStream(channelLevel1);
 
@@ -47,7 +47,7 @@ public class QnameSearcher {
         }
         inputStreamLevel1.close();
 
-        Path pathLevel0 = indexFolder.resolve(IndexVersion.LATEST.fileName("0"));
+        Path pathLevel0 = indexFolder.resolve(IndexVersion.LATEST.fileName("record"));
         FileChannel channelLevel0 = FileChannel.open(pathLevel0, READ);
         long coffset = PointerPacker.INSTANCE.unpackCompressedOffset(start.getPointer());
         int uoffset = PointerPacker.INSTANCE.unpackUnCompressedOffset(start.getPointer());

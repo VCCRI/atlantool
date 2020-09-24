@@ -6,21 +6,24 @@ public abstract class IndexVersion {
 
     public static final IndexVersion LATEST = new IndexVersion() {
         @Override
-        public String fileName(String ext) {
-            return "qname-version" + version() + "." + ext ;
+        public String fileName(String type) {
+            return "qname.v" + version() + "." + type +  ".bgz";
         }
 
+        /**
+         * Increase this number when modifying the index format.
+         */
         @Override
-        public String version() {
-            return "0";
+        public int version() {
+            return 1;
         }
 
         @Override
         public String toString() {
-            return version();
+            return "v" + version();
         }
     };
 
     public abstract String fileName(String ext);
-    public abstract String version();
+    public abstract int version();
 }
