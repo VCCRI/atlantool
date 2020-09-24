@@ -48,6 +48,10 @@ $ atlantool-linux-x64 view 1G.bam -n SOLEXA-1GA-1_0047_FC62472:5:52:15203:7914#0
 SOLEXA-1GA-1_0047_FC62472:5:52:15203:7914#0	0	chr1	10158	25	36M	*	0	0	AACCCTAACCCTAACCCTAACCTAACCCTAACCCTA	ED?EEGDG?EEGGG4B@ABB@BD:49+=:=@;=;;D	X0:i:1	MD:Z:36	NM:i:0
 ```
 
+## Performance
+
+Indexing time depends on size and number of records of BAM file. At the moment the indexing time for 140 GB BAM file of 1.2 billion records using 8 threads is around 2 hours. It generate index files of 12 GB. Query time is sub second.
+
 ## Index file format
 
 There are two index files, `qname.index.bgz` and `qname.data.bgz`.
