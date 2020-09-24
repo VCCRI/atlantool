@@ -43,7 +43,7 @@ hs_err_pid*
 
 # User-specific stuff
 .idea/**
-**/.iml
+*.iml
 
 # sorted qname file part
 *.part
