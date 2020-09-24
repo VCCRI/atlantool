@@ -5,6 +5,8 @@ Tool for:
 * Indexing records in large BAM files by their QNAME (run once)
 * Efficiently retrieving records by their QNAME (use index many times)
 
+When there are multiple records having the same QNAME, such as for read pairs and supplementary alignments, this tool retrieves all records having the requested QNAME.
+
 ## Usage
 
 The tool can be accessed as JAR file (`java -jar atlantool.jar`) or as a 
