@@ -50,7 +50,7 @@ SOLEXA-1GA-1_0047_FC62472:5:52:15203:7914#0	0	chr1	10158	25	36M	*	0	0	AACCCTAACC
 
 ## Performance
 
-Indexing time depends on size and number of records of BAM file. At the moment the indexing time for a 140 GB BAM file of 1.2 billion records using 8 threads is around 2 hours. It generates index files of 12 GB. Query time is sub second.
+Indexing time depends on the size and the number of records in BAM file. At the moment the indexing time for a 140 GB BAM file of 1.2 billion records using 8 threads is around 2 hours. It generates index files of 12 GB. Query time is sub second.
 
 ## Index file format
 
