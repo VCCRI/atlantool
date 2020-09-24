@@ -8,16 +8,16 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.nio.file.StandardOpenOption.READ;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
@@ -44,9 +44,9 @@ public class QnameSearcher {
     List<Long> getPointersForQname(Path indexFolder, Set<String> qnames) throws IOException {
         final Map<byte[], KeyPointer> qnameToPointer = getQnameToPointerMap(indexFolder, qnames);
 
-        // Map from a pointer -> list of qnames in that level
-        final Map<Long, List<byte[]>> pointerToQname = qnameToPointer.entrySet().stream()
-                .collect(toMap(e -> e.getValue().getPointer(), e -> singletonList(e.getKey()), this::concatList));
+        // Map from a pointer -> set of qnames in that level
+        final Map<Long, Set<byte[]>> pointerToQname = qnameToPointer.entrySet().stream()
+                .collect(toMap(e -> e.getValue().getPointer(), e -> Set.of(e.getKey()), this::concatSet));
 
         return pointerToQname.entrySet().stream()
                 .flatMap(e -> getPointers(e.getValue(), indexFolder, e.getKey()).stream())
@@ -68,10 +68,10 @@ public class QnameSearcher {
                     .collect(toMap(KeyPointer::getKey, Function.identity()));
 
             keyPointerReader.read(inputStreamLevel1)
-                    .forEach(inputKeyPointer -> {
+                    .forEach(indexPointer -> {
                         for (KeyPointer keyPointer : keyPointers) {
-                            if (inputKeyPointer.compareTo(keyPointer) < 0) {
-                                keyPointerMap.put(keyPointer.getKey(), inputKeyPointer);
+                            if (indexPointer.compareTo(keyPointer) < 0) {
+                                keyPointerMap.put(keyPointer.getKey(), indexPointer);
                             }
                         }
                     });
@@ -79,7 +79,7 @@ public class QnameSearcher {
         }
     }
 
-    private List<Long> getPointers(List<byte[]> qnames, Path indexFolder, long keyPointer) {
+    private List<Long> getPointers(Set<byte[]> qnames, Path indexFolder, long keyPointer) {
         try {
             Path pathLevel0 = indexFolder.resolve("qname.0");
             FileChannel channelLevel0 = FileChannel.open(pathLevel0, READ);
@@ -95,19 +95,24 @@ public class QnameSearcher {
             try (InputStream inputStream = Channels.newInputStream(channelLevel0)) {
                 Iterable<KeyPointer> indexLevel0 = () -> keyPointerReader.read(inputStream, unCompressedOffset).iterator();
 
-                List<byte[]> remainingQnames = new LinkedList<>(qnames);
+                Set<byte[]> remainingQnames = new TreeSet<>(Arrays::compareUnsigned);
+                remainingQnames.addAll(qnames);
+
                 List<Long> pointers = new ArrayList<>();
-                for (KeyPointer x : indexLevel0) {
+                for (KeyPointer indexPointer : indexLevel0) {
                     boolean keysLeft = false;
                     for (Iterator<byte[]> it = remainingQnames.iterator(); it.hasNext(); ) {
-                        final int keyComparison = Arrays.compareUnsigned(x.getKey(), it.next());
+                        final int keyComparison = Arrays.compareUnsigned(indexPointer.getKey(), it.next());
                         if (keyComparison == 0) {
                             // Found a match
-                            pointers.add(x.getPointer());
+                            pointers.add(indexPointer.getPointer());
                             keysLeft = true;
+                            // No other qnames would match because they are unique
+                            break;
                         } else if (keyComparison < 0) {
-                            // There could still be keys to be found in this level
                             keysLeft = true;
+                            // No other qnames would match because they are all greater
+                            break;
                         } else {
                             // We are done with the current key
                             it.remove();
@@ -122,9 +127,9 @@ public class QnameSearcher {
         }
     }
 
-    private <T> List<T> concatList(List<T> l1, List<T> l2) {
-        return Stream.concat(l1.stream(), l2.stream())
-                .collect(toList());
+    private <T> Set<T> concatSet(Set<T> s1, Set<T> s2) {
+        return Stream.concat(s1.stream(), s2.stream())
+                .collect(Collectors.toSet());
     }
 }
 
