@@ -5,7 +5,6 @@ import org.apache.commons.compress.utils.CountingOutputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.zip.Deflater;
 import java.util.zip.GZIPOutputStream;
 
 public class GzipConcatenatedOutputStream extends OutputStream {
@@ -13,14 +12,16 @@ public class GzipConcatenatedOutputStream extends OutputStream {
 
     private final OutputStream outputStream;
     private final int uncompressedSize;
+    private final int compressionLevel;
 
     private CountingOutputStream uncompressedStream;
     private CountingOutputStream compressedStream;
     private long compressedCount;
 
-    public GzipConcatenatedOutputStream(OutputStream outputStream, int uncompressedSize) throws IOException {
+    public GzipConcatenatedOutputStream(OutputStream outputStream, int uncompressedSize, int compressionLevel) throws IOException {
         this.outputStream = outputStream;
         this.uncompressedSize = uncompressedSize;
+        this.compressionLevel = compressionLevel;
         compressedCount = 0;
         nextEntry();
     }
@@ -77,15 +78,15 @@ public class GzipConcatenatedOutputStream extends OutputStream {
                 flush();
             }
         };
-        OutputStream gzipOutputStream = new ConfigurableGZIPOutputStream(compressedStream);
+        OutputStream gzipOutputStream = new ConfigurableGZIPOutputStream(compressedStream, compressionLevel);
         uncompressedStream = new CountingOutputStream(new BufferedOutputStream(gzipOutputStream, FILE_BUFF_SIZE));
     }
 
     static class ConfigurableGZIPOutputStream extends GZIPOutputStream {
 
-        public ConfigurableGZIPOutputStream(OutputStream out) throws IOException {
+        public ConfigurableGZIPOutputStream(OutputStream out, int compressionLevel) throws IOException {
             super(out);
-            def.setLevel(Deflater.BEST_COMPRESSION);
+            def.setLevel(compressionLevel);
         }
     }
 }

@@ -68,6 +68,8 @@ class IndexCommand implements Callable<Integer> {
     boolean verbose;
     @Option(names = {"--force" }, description = "Overwrite existing index", defaultValue = "false")
     boolean force;
+    @Option(names = {"--compression"}, description = "Compression level (1 to 9). 1 = faster but bigger index file size, 9 = slower but smaller index file size", defaultValue = "6")
+    int compressionLevel;
 
     @Override
     public Integer call() {
@@ -92,7 +94,7 @@ class IndexCommand implements Callable<Integer> {
 
         BamFileReader fileReader = new DefaultBamFileReader(new EfficientBamRecordParser());
         QnameIndexer indexer = new QnameIndexer(fileReader,
-                new KeyPointerWriter(),
+                new KeyPointerWriter(compressionLevel),
                 new KeyPointerReader(),
                 threadCount,
                 sortBufferSize);
