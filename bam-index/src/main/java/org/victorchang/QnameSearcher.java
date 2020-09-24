@@ -12,9 +12,12 @@ import java.io.InputStream;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static java.nio.file.StandardOpenOption.READ;
+import static java.util.Collections.emptyList;
 
 public class QnameSearcher {
     private static final Logger log = LoggerFactory.getLogger(QnameSearcher.class);
@@ -30,6 +33,14 @@ public class QnameSearcher {
     }
 
     public int search(Path bamFile, Path indexFolder, String qname) throws IOException {
+        final List<Long> pointersForQname = getPointersForQname(indexFolder, qname);
+        for (Long pointer : pointersForQname) {
+            recordReader.read(bamFile, pointer, handler);
+        }
+        return pointersForQname.size();
+    }
+
+    List<Long> getPointersForQname(Path indexFolder, String qname) throws IOException {
         Path pathLevel1 = indexFolder.resolve("qname.1");
         FileChannel channelLevel1 = FileChannel.open(pathLevel1, READ);
         InputStream inputStreamLevel1 = Channels.newInputStream(channelLevel1);
@@ -53,17 +64,16 @@ public class QnameSearcher {
         int uoffset = PointerPacker.INSTANCE.unpackUnCompressedOffset(start.getPointer());
 
         if (coffset >= channelLevel0.size()) {
-            return 0;
+            return emptyList();
         }
         channelLevel0.position(coffset);
         InputStream inputStreamLevel0 = Channels.newInputStream(channelLevel0);
 
-        int found = 0;
+        List<Long> pointers = new ArrayList<>();
         Iterable<KeyPointer> indexLevel0 =  () -> keyPointerReader.read(inputStreamLevel0, uoffset).iterator();
         for (KeyPointer x : indexLevel0) {
             if (Arrays.equals(x.getKey(), input)) {
-                recordReader.read(bamFile, x.getPointer(), handler);
-                found++;
+                pointers.add(x.getPointer());
             }
             if (Arrays.compareUnsigned(x.getKey(), input) > 0) {
                 break;
@@ -72,7 +82,7 @@ public class QnameSearcher {
 
         inputStreamLevel0.close();
 
-        return found;
+        return pointers;
     }
 
     public static class DebuggingHandler implements BamRecordHandler {
