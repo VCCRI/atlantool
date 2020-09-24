@@ -39,9 +39,9 @@ public class QnamePosCollector implements BamRecordHandler {
     }
 
     @Override
-    public void onAlignmentPosition(long blockPos, int offset) {
-        this.coffset = blockPos;
-        this.uoffset = offset;
+    public void onAlignmentPosition(long coffset, int uoffset) {
+        this.coffset = coffset;
+        this.uoffset = uoffset;
     }
 
     @Override

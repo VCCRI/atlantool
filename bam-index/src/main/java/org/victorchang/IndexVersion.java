@@ -15,7 +15,7 @@ public abstract class IndexVersion {
          */
         @Override
         public int version() {
-            return 1;
+            return 2;
         }
 
         @Override

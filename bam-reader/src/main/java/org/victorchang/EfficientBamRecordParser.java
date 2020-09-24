@@ -36,7 +36,7 @@ public class EfficientBamRecordParser implements BamRecordParser {
         dataInput.readInt(); // template len
 
         readQname(dataInput, qnameLen);
-        handler.onQname(qnameBuffer, qnameLen);
+        handler.onQname(qnameBuffer, qnameLen - 1); // subtract 1 for terminated \x0
 
         int cigarLen = 4 * cigarCount; // skip cigar
         while (cigarLen > 0) {
