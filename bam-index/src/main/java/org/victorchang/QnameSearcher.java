@@ -67,14 +67,19 @@ public class QnameSearcher {
             final Map<byte[], KeyPointer> keyPointerMap = keyPointers.stream()
                     .collect(toMap(KeyPointer::getKey, Function.identity()));
 
-            keyPointerReader.read(inputStreamLevel1)
-                    .forEach(indexPointer -> {
-                        for (KeyPointer keyPointer : keyPointers) {
-                            if (indexPointer.compareTo(keyPointer) < 0) {
-                                keyPointerMap.put(keyPointer.getKey(), indexPointer);
-                            }
-                        }
-                    });
+            final Iterable<KeyPointer> indexPointers =  () -> keyPointerReader.read(inputStreamLevel1).iterator();
+            for (KeyPointer indexPointer : indexPointers) {
+                boolean updated = false;
+                for (KeyPointer keyPointer : keyPointers) {
+                    if (indexPointer.compareTo(keyPointer) < 0) {
+                        keyPointerMap.put(keyPointer.getKey(), indexPointer);
+                        updated = true;
+                    }
+                }
+                if (!updated) {
+                    return keyPointerMap;
+                }
+            }
             return keyPointerMap;
         }
     }
