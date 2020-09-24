@@ -76,8 +76,8 @@ a QNAME that is equal or greater.
 
 Given the above index files, a search for `input` is performed like this:
 
-1. Iterate through `qname.1` to find the last record where `QNAME <= input`.
-2. Starting from the offset from 1, iterate through `qname.0` to find `QNAME == input` records.
+1. Iterate through `qname.v[?].index.bgz` to find the last record where `QNAME <= input`.
+2. Starting from the offset from 1, iterate through `qname.v[?].data.bgz` to find `QNAME == input` records.
    Stop when we hit `QNAME > input` (we won't find more records).
 3. Using the offsets from 2, look up the records in the BAM file.
 
