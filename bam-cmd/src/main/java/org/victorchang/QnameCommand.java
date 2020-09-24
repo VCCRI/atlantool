@@ -66,7 +66,7 @@ class IndexCommand implements Callable<Integer> {
     Path tempDirectory;
     @Option(names = {"-v", "--verbose" }, description = "Switch on verbose output", defaultValue = "false")
     boolean verbose;
-    @Option(names = {"-f", "--force" }, description = "Overwrite existing index", defaultValue = "false")
+    @Option(names = {"--force" }, description = "Overwrite existing index", defaultValue = "false")
     boolean force;
 
     @Override
