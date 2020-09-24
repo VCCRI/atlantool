@@ -45,7 +45,7 @@ public class QnameCommand {
                 .ofNullable(bamPath.getParent())
                 .map(Path::toString)
                 .orElse("");
-        return Path.of(parent, fileName + ".qindex");
+        return Path.of(parent, fileName + ".atlantool-index");
     }
 }
 
