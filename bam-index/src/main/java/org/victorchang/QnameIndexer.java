@@ -82,12 +82,12 @@ public class QnameIndexer {
                 .map(BaseStream::iterator)
                 .collect(Collectors.toList()), KeyPointer::compareTo);
 
-        Path indexLevel0 = indexDir.resolve("qname.0");
+        Path indexLevel0 = indexDir.resolve(IndexVersion.LATEST.fileName("data"));
         try (FileChannel fileChannel0 = FileChannel.open(indexLevel0, CREATE, WRITE, TRUNCATE_EXISTING)) {
             List<KeyPointer> metadata = keyPointerWriter.write(Channels.newOutputStream(fileChannel0),
                     Streams.stream(merged), (int) Math.sqrt(recordCount));
 
-            Path indexLevel1 = indexDir.resolve("qname.1");
+            Path indexLevel1 = indexDir.resolve(IndexVersion.LATEST.fileName("index"));
             try (FileChannel fileChannel1 = FileChannel.open(indexLevel1, CREATE, WRITE, TRUNCATE_EXISTING)) {
                 keyPointerWriter.write(Channels.newOutputStream(fileChannel1), metadata.stream(), metadata.size());
             }

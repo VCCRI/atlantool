@@ -130,7 +130,7 @@ public class QnameSearchTest {
 
         indexer.index(indexFolder, bamFile, indexFolder);
 
-        Path pathLevel0 = indexFolder.resolve("qname.0");
+        Path pathLevel0 = indexFolder.resolve(IndexVersion.LATEST.fileName("data"));
         FileChannel channelLevel0 = FileChannel.open(pathLevel0, READ);
         InputStream inputStreamLevel0 = Channels.newInputStream(channelLevel0);
 

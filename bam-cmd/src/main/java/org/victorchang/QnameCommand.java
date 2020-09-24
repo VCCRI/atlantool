@@ -64,9 +64,9 @@ class IndexCommand implements Callable<Integer> {
     long bytesLimit;
     @Option(names = {"-t", "--temporary-path"}, description = "Directory to store temporary files for sorting. By default uses the index path")
     Path tempDirectory;
-    @Option(names = {"-v", "--verbose" }, description = "Switch on verbose output", defaultValue = "false")
+    @Option(names = {"-v", "--verbose"}, description = "Switch on verbose output", defaultValue = "false")
     boolean verbose;
-    @Option(names = {"--force" }, description = "Overwrite existing index", defaultValue = "false")
+    @Option(names = {"--force"}, description = "Overwrite existing index", defaultValue = "false")
     boolean force;
     @Option(names = {"--compression"}, description = "Compression level (1 to 9). 1 = faster but bigger index file size, 9 = slower but smaller index file size", defaultValue = "6")
     int compressionLevel;
@@ -86,7 +86,7 @@ class IndexCommand implements Callable<Integer> {
 
         if (tempDirectory == null) {
             tempDirectory = indexDirectory;
-        } else if (!createDirectory(tempDirectory, force)) {
+        } else if (!createDirectory(tempDirectory)) {
             return -1;
         }
 
@@ -122,10 +122,24 @@ class IndexCommand implements Callable<Integer> {
         if (indexDirectory == null) {
             indexDirectory = QnameCommand.getDefaultIndexPath(bamPath);
         }
-        return createDirectory(indexDirectory, force);
+        if (createDirectory(indexDirectory)) {
+            Path indexLevel1 = indexDirectory.resolve(IndexVersion.LATEST.fileName("index"));
+            Path indexLevel0 = indexDirectory.resolve(IndexVersion.LATEST.fileName("data"));
+            if (Files.exists(indexLevel1) || Files.exists(indexLevel0)) {
+                if (!force) {
+                    LOG.error("Index '{}' exists in '{}'.", IndexVersion.LATEST, indexDirectory);
+                    return false;
+                } else {
+                    LOG.error("Index '{}' exists in '{}', overwrite it", IndexVersion.LATEST, indexDirectory);
+                    return true;
+                }
+            }
+            return true;
+        }
+        return false;
     }
 
-    private boolean createDirectory(Path path, boolean force) {
+    private boolean createDirectory(Path path) {
         if (!Files.exists(path)) {
             try {
                 Files.createDirectory(path);
@@ -133,15 +147,8 @@ class IndexCommand implements Callable<Integer> {
                 LOG.error("Could not create directory: {}. Error : {}", path, e.getMessage());
                 return false;
             }
-        } else {
-            if (force) {
-                LOG.warn("{} already exists, overwrite it.", path);
-            } else {
-                LOG.error("{} already exists.", path);
-            }
-            return force;
         }
-        return true;
+        return Files.isDirectory(path);
     }
 }
 
@@ -170,7 +177,7 @@ class QnameParam {
         try {
             return Files.readAllLines(qnamePath);
         } catch (Exception e) {
-            throw new IllegalArgumentException("Could not read file: " +  qnamePath, e);
+            throw new IllegalArgumentException("Could not read file: " + qnamePath, e);
         }
     }
 
@@ -196,7 +203,7 @@ class ViewCommand implements Callable<Integer> {
     Path indexDirectory;
     @Option(names = {"-h", "--header"}, description = "Include header in SAM output", defaultValue = "false")
     boolean includeHeader;
-    @Option(names = {"-v", "--verbose" }, description = "Switch on verbose output", defaultValue = "false")
+    @Option(names = {"-v", "--verbose"}, description = "Switch on verbose output", defaultValue = "false")
     boolean verbose;
 
     @Override
@@ -214,6 +221,14 @@ class ViewCommand implements Callable<Integer> {
         }
         if (!Files.isDirectory(indexDirectory)) {
             System.err.println(indexDirectory + " not found.");
+            return -1;
+        }
+
+        Path indexLevel1 = indexDirectory.resolve(IndexVersion.LATEST.fileName("index"));
+        Path indexLevel0 = indexDirectory.resolve(IndexVersion.LATEST.fileName("data"));
+
+        if (!Files.exists(indexLevel1) || !Files.exists(indexLevel0)) {
+            System.err.printf("Index '%s' doesn't exists in '%s'.\n", IndexVersion.LATEST, indexDirectory);
             return -1;
         }
 

@@ -57,7 +57,7 @@ public class QnameSearcher {
      * Returns a map from the qname -> Key pointer location in the index file.
      */
     private Map<byte[], KeyPointer> getQnameToPointerMap(Path indexFolder, Set<String> qnames) throws IOException {
-        Path pathLevel1 = indexFolder.resolve("qname.1");
+        Path pathLevel1 = indexFolder.resolve(IndexVersion.LATEST.fileName("index"));
         try (InputStream inputStreamLevel1 = Channels.newInputStream(FileChannel.open(pathLevel1, READ))) {
             final List<KeyPointer> keyPointers = qnames.stream()
                     .map(Ascii7Coder.INSTANCE::encode)
@@ -86,7 +86,7 @@ public class QnameSearcher {
 
     private List<Long> getPointers(Set<byte[]> qnames, Path indexFolder, long keyPointer) {
         try {
-            Path pathLevel0 = indexFolder.resolve("qname.0");
+            Path pathLevel0 = indexFolder.resolve(IndexVersion.LATEST.fileName("data"));
             FileChannel channelLevel0 = FileChannel.open(pathLevel0, READ);
 
             long compressedOffset = PointerPacker.INSTANCE.unpackCompressedOffset(keyPointer);
