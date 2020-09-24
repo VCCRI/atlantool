@@ -30,7 +30,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Build project
-        run: mvn -B clean package
+        run: mvn -B clean verify
 
       - name: Build native image
         id: build-native-image
