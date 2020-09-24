@@ -1,6 +1,7 @@
 package org.victorchang;
 
 import htsjdk.samtools.SAMSequenceRecord;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -13,12 +14,13 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.partitioningBy;
 import static org.victorchang.QnameCommand.LOG;
 
 @Command(
@@ -141,18 +143,26 @@ class QnameParam {
     @Option(names = {"-f", "--file-name"}, description = "Path to a file containing QNAMEs to search for (separated by newline).")
     Path qnamePath;
 
-    List<String> getQnames() {
+    List<String> getQnames() throws IllegalArgumentException {
         if (qname != null) {
             return singletonList(qname);
         }
-        try {
-            return Files.readAllLines(qnamePath)
+        final Map<Boolean, List<String>> qnames = readFile()
                     .stream()
-                    .filter(this::isValidQname)
-                    .collect(toList());
+                    .filter(StringUtils::isNotBlank)
+                    .collect(partitioningBy(this::isValidQname));
+            final List<String> invalidQnames = qnames.getOrDefault(false, emptyList());
+            if (!invalidQnames.isEmpty()) {
+                throw new IllegalArgumentException("File " + qnamePath + " contains invalid qnames : " + invalidQnames);
+            }
+            return qnames.get(true);
+    }
+
+    private List<String> readFile() {
+        try {
+            return Files.readAllLines(qnamePath);
         } catch (Exception e) {
-            LOG.error("Could not read file : {}", qnamePath, e);
-            return emptyList();
+            throw new IllegalArgumentException("Could not read file: " +  qnamePath, e);
         }
     }
 
@@ -206,8 +216,15 @@ class ViewCommand implements Callable<Integer> {
         SamPrintingHandler handler = new SamPrintingHandler(System.out, includeHeader);
         QnameSearcher searcher = new QnameSearcher(qnamePosReader, bamRecordReader, handler);
 
+        final List<String> qnames;
+        try {
+            qnames = qnameParam.getQnames();
+        } catch (IllegalArgumentException e) {
+            LOG.error(e.getMessage());
+            return -1;
+        }
         // TODO: Optimize searching for multiple qnames
-        for (String qname : qnameParam.getQnames()) {
+        for (String qname : qnames) {
             searcher.search(bamPath, indexDirectory, qname);
         }
         handler.finish();
