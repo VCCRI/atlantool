@@ -65,7 +65,7 @@ public class BamRecordReaderTest {
         }
 
         @Override
-        public void onAlignmentPosition(long blockPos, int offset) {
+        public void onAlignmentPosition(long coffset, int uoffset) {
         }
 
         @Override

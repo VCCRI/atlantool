@@ -43,7 +43,7 @@ public class SamtoolsBasedParser implements BamRecordParser {
                 templateLen,
                 restOfData);
 
-        handler.onQname(samRecord.getReadName().getBytes(), qnameLen);
+        handler.onQname(samRecord.getReadName().getBytes(), qnameLen - 1); // subtract 1 for \x0 terminated
         handler.onSequence(samRecord.getReadBases(), seqLen);
         handler.onAlignmentRecord(samRecord);
     }

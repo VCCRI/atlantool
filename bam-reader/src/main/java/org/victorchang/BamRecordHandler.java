@@ -10,7 +10,7 @@ public interface BamRecordHandler {
 
     void onHeader(SAMFileHeader header);
 
-    void onAlignmentPosition(long blockPos, int offset);
+    void onAlignmentPosition(long coffset, int uoffset);
 
     void onQname(byte[] qnameBuffer, int qnameLen);
 
