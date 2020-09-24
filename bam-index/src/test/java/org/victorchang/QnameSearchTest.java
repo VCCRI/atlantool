@@ -7,7 +7,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.victorchang.QnameSearcher.DebuggingHandler;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -75,10 +74,6 @@ public class QnameSearchTest {
 
         log.info("Create index of {} records completed in {}", recordCount, (finish - start) / 1000_000 + "ms");
 
-        Path pathLevel0 = indexFolder.resolve("qname.0");
-        FileChannel channelLevel0 = FileChannel.open(pathLevel0, READ);
-        InputStream inputStreamLevel0 = Channels.newInputStream(channelLevel0);
-
         // Test some specific keys
         int found = searcher.search(bamFile, indexFolder, "SOLEXA-1GA-1_1_FC20EMA:7:100:100:372");
         assertThat(found, equalTo(2));
@@ -104,7 +99,7 @@ public class QnameSearchTest {
 
         indexer.index(indexFolder, bamFile, indexFolder);
 
-        Path pathLevel0 = indexFolder.resolve("qname.0");
+        Path pathLevel0 = indexFolder.resolve(IndexVersion.VERSION0.fileName("0"));
         FileChannel channelLevel0 = FileChannel.open(pathLevel0, READ);
         InputStream inputStreamLevel0 = Channels.newInputStream(channelLevel0);
 
