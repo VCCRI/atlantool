@@ -16,11 +16,11 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
-import static java.util.Collections.emptyList;
-import static java.util.Collections.singletonList;
 import static java.util.stream.Collectors.partitioningBy;
+import static java.util.stream.Collectors.toSet;
 import static org.victorchang.QnameCommand.LOG;
 
 @Command(
@@ -45,7 +45,7 @@ public class QnameCommand {
                 .ofNullable(bamPath.getParent())
                 .map(Path::toString)
                 .orElse("");
-        return Path.of(parent, fileName + ".qindex");
+        return Path.of(parent, fileName + ".atlantool-index");
     }
 }
 
@@ -68,6 +68,8 @@ class IndexCommand implements Callable<Integer> {
     boolean verbose;
     @Option(names = {"--force"}, description = "Overwrite existing index", defaultValue = "false")
     boolean force;
+    @Option(names = {"--compression"}, description = "Compression level (1 to 9). 1 = faster but bigger index file size, 9 = slower but smaller index file size", defaultValue = "6")
+    int compressionLevel;
 
     @Override
     public Integer call() {
@@ -92,7 +94,7 @@ class IndexCommand implements Callable<Integer> {
 
         BamFileReader fileReader = new DefaultBamFileReader(new EfficientBamRecordParser());
         QnameIndexer indexer = new QnameIndexer(fileReader,
-                new KeyPointerWriter(),
+                new KeyPointerWriter(compressionLevel),
                 new KeyPointerReader(),
                 threadCount,
                 sortBufferSize);
@@ -122,7 +124,7 @@ class IndexCommand implements Callable<Integer> {
         }
         if (createDirectory(indexDirectory)) {
             Path indexLevel1 = indexDirectory.resolve(IndexVersion.LATEST.fileName("index"));
-            Path indexLevel0 = indexDirectory.resolve(IndexVersion.LATEST.fileName("record"));
+            Path indexLevel0 = indexDirectory.resolve(IndexVersion.LATEST.fileName("data"));
             if (Files.exists(indexLevel1) || Files.exists(indexLevel0)) {
                 if (!force) {
                     LOG.error("Index '{}' exists in '{}'.", IndexVersion.LATEST, indexDirectory);
@@ -156,19 +158,19 @@ class QnameParam {
     @Option(names = {"-f", "--file-name"}, description = "Path to a file containing QNAMEs to search for (separated by newline).")
     Path qnamePath;
 
-    List<String> getQnames() throws IllegalArgumentException {
+    Set<String> getQnames() throws IllegalArgumentException {
         if (qname != null) {
-            return singletonList(qname);
+            return Set.of(qname);
         }
-        final Map<Boolean, List<String>> qnames = readFile()
-                .stream()
-                .filter(StringUtils::isNotBlank)
-                .collect(partitioningBy(this::isValidQname));
-        final List<String> invalidQnames = qnames.getOrDefault(false, emptyList());
-        if (!invalidQnames.isEmpty()) {
-            throw new IllegalArgumentException("File " + qnamePath + " contains invalid qnames : " + invalidQnames);
-        }
-        return qnames.get(true);
+        final Map<Boolean, Set<String>> qnames = readFile()
+                    .stream()
+                    .filter(StringUtils::isNotBlank)
+                    .collect(partitioningBy(this::isValidQname, toSet()));
+            final Set<String> invalidQnames = qnames.getOrDefault(false, Set.of());
+            if (!invalidQnames.isEmpty()) {
+                throw new IllegalArgumentException("File " + qnamePath + " contains invalid qnames : " + invalidQnames);
+            }
+            return qnames.get(true);
     }
 
     private List<String> readFile() {
@@ -223,7 +225,7 @@ class ViewCommand implements Callable<Integer> {
         }
 
         Path indexLevel1 = indexDirectory.resolve(IndexVersion.LATEST.fileName("index"));
-        Path indexLevel0 = indexDirectory.resolve(IndexVersion.LATEST.fileName("record"));
+        Path indexLevel0 = indexDirectory.resolve(IndexVersion.LATEST.fileName("data"));
 
         if (!Files.exists(indexLevel1) || !Files.exists(indexLevel0)) {
             System.err.printf("Index '%s' doesn't exists in '%s'.\n", IndexVersion.LATEST, indexDirectory);
@@ -237,16 +239,14 @@ class ViewCommand implements Callable<Integer> {
         SamPrintingHandler handler = new SamPrintingHandler(System.out, includeHeader);
         QnameSearcher searcher = new QnameSearcher(qnamePosReader, bamRecordReader, handler);
 
-        final List<String> qnames;
+        final Set<String> qnames;
         try {
             qnames = qnameParam.getQnames();
         } catch (IllegalArgumentException e) {
             LOG.error(e.getMessage());
             return -1;
         }
-        for (String qname : qnames) {
-            searcher.search(bamPath, indexDirectory, qname);
-        }
+        searcher.search(bamPath, indexDirectory, qnames);
         handler.finish();
 
         long finish = System.nanoTime();

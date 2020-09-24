@@ -15,7 +15,7 @@ public class GzipConcatenatedOutputStreamTest {
     @Test
     public void testCreateConcatenatedGzip() throws IOException {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        GzipConcatenatedOutputStream concatenatedOutput = new GzipConcatenatedOutputStream(output, 512);
+        GzipConcatenatedOutputStream concatenatedOutput = new GzipConcatenatedOutputStream(output, 512, 6);
         byte[] buffer = new byte[384];
         concatenatedOutput.write(buffer);
         concatenatedOutput.write(buffer, 0, buffer.length);

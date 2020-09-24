@@ -18,10 +18,7 @@ import java.util.stream.BaseStream;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.READ;
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
-import static java.nio.file.StandardOpenOption.WRITE;
+import static java.nio.file.StandardOpenOption.*;
 
 public class QnameIndexer {
     private static final Logger log = LoggerFactory.getLogger(QnameIndexer.class);
@@ -85,7 +82,7 @@ public class QnameIndexer {
                 .map(BaseStream::iterator)
                 .collect(Collectors.toList()), KeyPointer::compareTo);
 
-        Path indexLevel0 = indexDir.resolve(IndexVersion.LATEST.fileName("record"));
+        Path indexLevel0 = indexDir.resolve(IndexVersion.LATEST.fileName("data"));
         try (FileChannel fileChannel0 = FileChannel.open(indexLevel0, CREATE, WRITE, TRUNCATE_EXISTING)) {
             List<KeyPointer> metadata = keyPointerWriter.write(Channels.newOutputStream(fileChannel0),
                     Streams.stream(merged), (int) Math.sqrt(recordCount));
