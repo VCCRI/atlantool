@@ -74,7 +74,7 @@ The offset is the position of the corresponding record in the BAM file.
 ### `qname.index.bgz`
 
 This file contains a subset of QNAMEs. The pointer is an offset into
-`qname.data.bgz` for where the last record with that QNAME is stored. Because
+`qname.data.bgz` for where the first record with that QNAME is stored. Because
 the file is sorted, that means records starting from that position have
 a QNAME that is equal or greater.
 
