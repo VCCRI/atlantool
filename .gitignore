@@ -50,6 +50,4 @@ hs_err_pid*
 
 # qname index files
 
-bam-index/**
-
 qname-files/**
