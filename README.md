@@ -48,7 +48,7 @@ SOLEXA-1GA-1_0047_FC62472:5:52:15203:7914#0	0	chr1	10158	25	36M	*	0	0	AACCCTAACC
 
 ## Index file format
 
-There are two index files, `qname.0` and `qname.1`.
+There are two index files, `qname.index.bgz` and `qname.data.bgz`.
 Both are in BGZF format as described in [SAMv1.pdf].
 The data is in the following format (numbers are in little endian):
 
@@ -60,15 +60,15 @@ xx xx xx xx xx xx xx xx: 8 bytes: virtual offset (pointer)
 
 The pointer is encoded as `coffset | uoffset << 48`.
 
-### `qname.index.bgz`
+### `qname.data.bgz`
 
 This file contains all the QNAME to virtual offset mappings, sorted by QNAME.
 The offset is the position of the corresponding record in the BAM file.
 
-### `qname.data.bgz`
+### `qname.index.bgz`
 
 This file contains a subset of QNAMEs. The pointer is an offset into
-`qname.0` for where the first record with that QNAME is stored. Because
+`qname.data.bgz` for where the first record with that QNAME is stored. Because
 the file is sorted, that means records starting from that position have
 a QNAME that is equal or greater.
 
