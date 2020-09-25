@@ -3,19 +3,16 @@ package org.victorchang;
 import com.google.common.io.LittleEndianDataInputStream;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.cram.io.CountingInputStream;
+import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
+import htsjdk.samtools.util.BlockCompressedInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedInputStream;
 import java.io.DataInput;
 import java.io.EOFException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
 import java.nio.file.Path;
-
-import static java.nio.file.StandardOpenOption.READ;
 
 public class DefaultBamFileReader implements BamFileReader {
     private static final Logger log = LoggerFactory.getLogger(DefaultBamFileReader.class);
@@ -40,20 +37,19 @@ public class DefaultBamFileReader implements BamFileReader {
         final SAMFileHeader header = readSamHeader(bamFile);
         handler.onHeader(header);
         long recordCount = 0;
-        try (FileChannel fileChannel = FileChannel.open(bamFile, READ)) {
-            InputStream compressedStream = new BufferedInputStream(Channels.newInputStream(fileChannel), FILE_BUFF_SIZE);
+        try (BlockCompressedInputStream blockCompressedInputStream = new BlockCompressedInputStream(bamFile.toFile())) {
 
-            GzipEntryPositionFinder positionFinder = new GzipEntryPositionFinder();
-            CountingInputStream uncompressedStream = new CountingInputStream(
-                    new BufferedInputStream(
-                            new GzipConcatenatedInputStream(compressedStream, positionFinder), FILE_BUFF_SIZE));
-
-            LittleEndianDataInputStream dataInput = new LittleEndianDataInputStream(uncompressedStream);
+            CountingInputStream countingInputStream = new CountingInputStream(blockCompressedInputStream);
+            LittleEndianDataInputStream dataInput = new LittleEndianDataInputStream(countingInputStream);
             assertMagic(dataInput);
             skipHeaderText(dataInput);
             skipReferences(dataInput);
 
             while (true) {
+                long filePointer = blockCompressedInputStream.getFilePointer();
+                long coffset = BlockCompressedFilePointerUtil.getBlockAddress(filePointer);
+                int uoffset = BlockCompressedFilePointerUtil.getBlockOffset(filePointer);
+
                 int recordLength;
                 try {
                     recordLength = dataInput.readInt();
@@ -61,30 +57,20 @@ public class DefaultBamFileReader implements BamFileReader {
                     break;
                 }
 
-                GzipEntryPosition position = positionFinder.find(uncompressedStream.getBytesRead() - 4);
-
-                if (position == null) {
-                    throw new IllegalStateException("Can't find start of a gzip entry");
-                }
-
-                if (position.getCompressed() >= bytesLimit) {
+                if (coffset > bytesLimit) {
                     log.info("Reach {} bytes limit, skip the rest the file", bytesLimit);
                     break;
                 }
 
-                long uoffset = uncompressedStream.getBytesRead() - position.getUncompressed() - 4;
+                handler.onAlignmentPosition(coffset, uoffset);
 
-                if (uoffset < 0 || uoffset >= (1 << 16)) {
-                    throw new IllegalStateException("Offset must be in the range of [0,2^16)");
-                }
-                handler.onAlignmentPosition(position.getCompressed(), (int) uoffset);
-
-                dataInput.mark(recordLength);
-
+                long start = countingInputStream.getCount();
                 recordParser.parse(header, dataInput, recordLength, handler);
+                long end = countingInputStream.getCount();
 
-                dataInput.reset();
-                skipBytesFully(dataInput, recordLength);
+                int remaining = recordLength - ((int) (end - start));
+                skipBytesFully(dataInput, remaining);
+
                 recordCount++;
             }
         }

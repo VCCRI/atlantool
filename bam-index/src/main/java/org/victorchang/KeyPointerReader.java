@@ -2,10 +2,8 @@ package org.victorchang;
 
 import com.google.common.collect.Streams;
 import com.google.common.io.LittleEndianDataInputStream;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import htsjdk.samtools.util.BlockCompressedInputStream;
 
-import java.io.BufferedInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -16,27 +14,14 @@ import java.util.stream.Stream;
  * Read a stream of {@link KeyPointer} from a concatenated gzip input.
  */
 public class KeyPointerReader {
-    private static final Logger log = LoggerFactory.getLogger(KeyPointerReader.class);
-    private static final int FILE_BUFF_SIZE = 8192;
 
     public Stream<KeyPointer> read(InputStream inputStream) {
-        return read(inputStream, 0, (compressedCount, uncompressedCount) -> {
-        });
-    }
-    public Stream<KeyPointer> read(InputStream inputStream, int offset) {
-        return read(inputStream, offset, (compressedCount, uncompressedCount) -> {
-        });
+        return read(inputStream, 0);
     }
 
     @SuppressWarnings("UnstableApiUsage")
-    public Stream<KeyPointer> read(InputStream inputStream, int offset, GzipEntryEventHandler eventHandler) {
-        InputStream concatenatedStream;
-        try {
-            concatenatedStream = new BufferedInputStream(
-                    new GzipConcatenatedInputStream(inputStream, eventHandler), FILE_BUFF_SIZE);
-        } catch (IOException ioException) {
-            throw new RuntimeException(ioException);
-        }
+    public Stream<KeyPointer> read(InputStream inputStream, int offset) {
+        InputStream concatenatedStream = new BlockCompressedInputStream(inputStream);
 
         LittleEndianDataInputStream dataInput = new LittleEndianDataInputStream(concatenatedStream);
         while (offset > 0) {

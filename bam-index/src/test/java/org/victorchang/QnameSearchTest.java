@@ -75,6 +75,7 @@ public class QnameSearchTest {
         long finish = System.nanoTime();
 
         log.info("Create index of {} records completed in {}", recordCount, (finish - start) / 1000_000 + "ms");
+        assertThat(recordCount, equalTo(1837142L));
 
         // Test some specific keys
         List<Long> pointers = searcher.getPointersForQname(indexFolder, Set.of("SOLEXA-1GA-1_1_FC20EMA:7:100:100:372"));
