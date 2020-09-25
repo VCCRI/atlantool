@@ -57,8 +57,7 @@ class IndexCommand implements Callable<Integer> {
 
     @Override
     public Integer call() {
-        java.util.logging.Logger.getLogger("")
-                .setLevel(verbose ? java.util.logging.Level.ALL : java.util.logging.Level.SEVERE);
+        Logging.configure(verbose);
 
         if (!Files.isRegularFile(bamPath)) {
             System.err.println(bamPath + " not found.");
