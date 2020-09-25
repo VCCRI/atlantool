@@ -64,7 +64,7 @@ xx...   N-8 bytes: QNAME (key)
 xx xx xx xx xx xx xx xx: 8 bytes: virtual offset (pointer)
 ```
 
-The pointer is encoded as `coffset | uoffset << 48`.
+The pointer is encoded as `(coffset << 16) | uoffset`.
 
 ### `qname.data.bgz`
 

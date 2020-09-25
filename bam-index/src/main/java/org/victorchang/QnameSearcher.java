@@ -1,5 +1,7 @@
 package org.victorchang;
 
+import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.channels.Channels;
@@ -89,8 +91,8 @@ public class QnameSearcher {
             Path pathLevel0 = indexFolder.resolve(IndexVersion.LATEST.fileName("data"));
             FileChannel channelLevel0 = FileChannel.open(pathLevel0, READ);
 
-            long compressedOffset = PointerPacker.INSTANCE.unpackCompressedOffset(keyPointer);
-            int unCompressedOffset = PointerPacker.INSTANCE.unpackUnCompressedOffset(keyPointer);
+            long compressedOffset = BlockCompressedFilePointerUtil.getBlockAddress(keyPointer);
+            int unCompressedOffset = BlockCompressedFilePointerUtil.getBlockOffset(keyPointer);
 
             if (compressedOffset >= channelLevel0.size()) {
                 return emptyList();

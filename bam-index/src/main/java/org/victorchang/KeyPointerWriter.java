@@ -1,8 +1,10 @@
 package org.victorchang;
 
-
 import com.google.common.io.LittleEndianDataOutputStream;
+import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
+import htsjdk.samtools.util.BlockCompressedOutputStream;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -31,25 +33,23 @@ public class KeyPointerWriter {
 
     @SuppressWarnings("UnstableApiUsage")
     public List<KeyPointer> write(OutputStream outputStream, Stream<KeyPointer> stream, long blockSize) throws IOException {
-        GzipConcatenatedOutputStream concatenatedStream =
-                new GzipConcatenatedOutputStream(outputStream, 1 << 16, compressionLevel);
+        BlockCompressedOutputStream blockCompressedOutputStream = new BlockCompressedOutputStream(outputStream, (File) null, compressionLevel);
 
-        LittleEndianDataOutputStream dataOutput = new LittleEndianDataOutputStream(concatenatedStream);
+        LittleEndianDataOutputStream dataOutput = new LittleEndianDataOutputStream(blockCompressedOutputStream);
 
         List<KeyPointer> metadata = new ArrayList<>();
 
         long count = 0;
         KeyPointer lastItem = null;
-        long coffset = 0;
-        int uoffset = 0;
+        long filePointer = 0;
         Iterable<KeyPointer> iterable = stream::iterator;
         for (KeyPointer x : iterable) {
             lastItem = x;
             if (count >= blockSize) {
-                coffset = concatenatedStream.getCompressedCount();
-                uoffset = (int) concatenatedStream.getUncompressedCount();
+                filePointer = blockCompressedOutputStream.getFilePointer();
+                int uoffset = BlockCompressedFilePointerUtil.getBlockOffset(filePointer);
                 if (uoffset < 1 << 16) { // if uoffset == 1 << 16 we will write next item
-                    metadata.add(new KeyPointer(coffset, uoffset, x.getKey(), x.getKey().length));
+                    metadata.add(new KeyPointer(filePointer, x.getKey(), x.getKey().length));
                     count = 0;
                 }
             }
@@ -61,7 +61,7 @@ public class KeyPointerWriter {
         dataOutput.close();
 
         if (count > 0) {
-            metadata.add(new KeyPointer(coffset, uoffset, lastItem.getKey(), lastItem.getKey().length));
+            metadata.add(new KeyPointer(filePointer, lastItem.getKey(), lastItem.getKey().length));
         }
 
         return metadata;
