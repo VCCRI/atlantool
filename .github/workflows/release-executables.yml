@@ -63,7 +63,7 @@ jobs:
 
       - name: Write Upload URL To File
         run: |
-          echo "${{steps.create_release.outputs.upload_url}}" > upload_url.txt
+          echo "${{ steps.create-release.outputs.upload_url }}" > upload_url.txt
 
       - name: Publish Upload URL
         uses: actions/upload-artifact@v2-preview
