@@ -45,7 +45,7 @@ public class KeyPointerReader {
                     try {
                         int keyLen;
                         try {
-                            keyLen = dataInput.readByte();
+                            keyLen = dataInput.readUnsignedByte();
                         } catch (EOFException ignored) {
                             return false;
                         }
