@@ -80,7 +80,7 @@ This file contains a subset of QNAMEs. The pointer is an offset into
 the file is sorted, that means records starting from that position have
 a QNAME that is equal or greater.
 
-## Search
+### Search
 
 Given the above index files, a search for `input` is performed like this:
 
@@ -88,6 +88,22 @@ Given the above index files, a search for `input` is performed like this:
 2. Starting from the offset from 1, iterate through `qname.data.bgz` to find `QNAME == input` records.
    Stop when we hit `QNAME > input` (we won't find more records).
 3. Using the offsets from 2, look up the records in the BAM file.
+
+
+# Contact
+
+Dr. Emma Rath - Victor Chang Cardiac Research Institute
+
+### Collaborators
+
+The following Atlassian employees have participated in writing this software
+through a collaboration project between the Atlassian Foundation and the Victor
+Chang Cardiac Research Institute:
+
+* Huy Le
+* Efim Pyshnograev
+* Amitdev Ranjitdev
+* Robin Stocker
 
 
 [SAMv1.pdf]: http://samtools.github.io/hts-specs/SAMv1.pdf
