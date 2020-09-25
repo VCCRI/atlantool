@@ -23,6 +23,18 @@ jobs:
       - name: Build project
         run: mvn -B clean verify
 
+      - name: Publish JAR to artifacts
+        uses: actions/upload-artifact@v2-preview
+        with:
+          name: 'atlantool.jar'
+          path: ./bam-cmd/target/atlantool.jar
+
+      - name: Publish reflection config to artifacts
+        uses: actions/upload-artifact@v2-preview
+        with:
+          name: 'reflect-config.json'
+          path: ./bam-cmd/target/classes/META-INF/native-image/picocli-generated/reflect-config.json
+
       - name: Compute variables
         id: vars
         run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
@@ -50,19 +62,17 @@ jobs:
           asset_content_type: application/jar
 
       - name: Write Upload URL To File
-        if: contains(github.ref, 'v')
         run: |
           echo "${{steps.create_release.outputs.upload_url}}" > upload_url.txt
 
       - name: Publish Upload URL
-        if: contains(github.ref, 'v')
         uses: actions/upload-artifact@v2-preview
         with:
           name: 'upload_url.txt'
           path: 'upload_url.txt'
 
   build-linux-and-macos-images:
-    name: 'Build Non-Windows Image'
+    name: Build Linux and MacOS image
     needs: [ build-jar-job ]
     strategy:
       matrix:
@@ -82,19 +92,22 @@ jobs:
           graalvm-version: 20.1.0
           native-image: true
 
-      - name: Checkout code
-        uses: actions/checkout@v2
+      - name: Get JAR Artifact
+        uses: actions/download-artifact@v2-preview
+        with:
+          name: 'atlantool.jar'
 
-      - name: Build project
-        run: mvn -B clean verify
+      - name: Get reflection config artifact
+          uses: actions/download-artifact@v2-preview
+          with:
+            name: 'reflect-config.json'
 
       - name: Build native image
         id: build-native-image
         run: |
-          cp ./bam-cmd/target/classes/META-INF/native-image/picocli-generated/reflect-config.json .
           native-image -jar ./bam-cmd/target/atlantool.jar
 
-      - name: 'Get Release URL'
+      - name: Get Release URL artifact
         uses: actions/download-artifact@v2-preview
         with:
           name: 'upload_url.txt'
