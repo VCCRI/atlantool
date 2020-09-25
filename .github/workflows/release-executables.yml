@@ -105,7 +105,7 @@ jobs:
       - name: Build native image
         id: build-native-image
         run: |
-          native-image -jar ./bam-cmd/target/atlantool.jar
+          native-image -jar atlantool.jar
 
       - name: Get Release URL artifact
         uses: actions/download-artifact@v2-preview
