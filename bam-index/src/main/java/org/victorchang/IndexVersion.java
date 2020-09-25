@@ -7,7 +7,7 @@ public abstract class IndexVersion {
     public static final IndexVersion LATEST = new IndexVersion() {
         @Override
         public String fileName(String type) {
-            return "qname.v" + version() + "." + type +  ".bgz";
+            return "qname.v" + version() + "." + type + ".bgz";
         }
 
         /**
@@ -15,7 +15,7 @@ public abstract class IndexVersion {
          */
         @Override
         public int version() {
-            return 2;
+            return 3;
         }
 
         @Override
@@ -25,5 +25,6 @@ public abstract class IndexVersion {
     };
 
     public abstract String fileName(String ext);
+
     public abstract int version();
 }

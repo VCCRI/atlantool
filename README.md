@@ -1,4 +1,4 @@
-# QNAME search
+# atlantool for QNAME search
 
 Tool for:
 
@@ -50,7 +50,9 @@ SOLEXA-1GA-1_0047_FC62472:5:52:15203:7914#0	0	chr1	10158	25	36M	*	0	0	AACCCTAACC
 
 ## Performance
 
-Indexing time depends on the size and the number of records in BAM file. At the moment the indexing time for a 140 GB BAM file of 1.2 billion records using 8 threads is around 2 hours. It generates index files of 12 GB. Query time is sub second.
+Indexing time depends on the size and the number of records in BAM file.
+At the moment the indexing time for a 140 GB BAM file of 1.2 billion records using 8 threads is around 1 hour (depending on hardware).
+It generates index files of 12 GB. Query time is sub second.
 
 ## Index file format
 
@@ -59,12 +61,12 @@ Both are in BGZF format as described in [SAMv1.pdf].
 The data is in the following format (numbers are in little endian):
 
 ```
-xx xx   2 bytes: length of entry (N)
-xx...   N-8 bytes: QNAME (key)
+xx      1 byte: length of QNAME (N)
+xx...   N bytes: QNAME (key)
 xx xx xx xx xx xx xx xx: 8 bytes: virtual offset (pointer)
 ```
 
-The pointer is encoded as `(coffset << 16) | uoffset`.
+The pointer is encoded as `(coffset << 16) | uoffset` (same as in BAM format).
 
 ### `qname.data.bgz`
 

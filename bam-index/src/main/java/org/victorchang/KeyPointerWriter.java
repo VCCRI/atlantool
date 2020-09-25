@@ -53,7 +53,7 @@ public class KeyPointerWriter {
                     count = 0;
                 }
             }
-            dataOutput.writeShort(x.getKey().length + 8);
+            dataOutput.writeByte(x.getKey().length);
             dataOutput.write(x.getKey());
             dataOutput.writeLong(x.getPointer());
             count++;
