@@ -115,6 +115,7 @@ jobs:
       - name: 'Get Upload URL'
         run: |
           echo "::set-env name=UPLOAD_URL::$(cat upload_url.txt)"
+          echo "Upload URL: $UPLOAD_URL"
 
       - name: Upload native image
         id: upload-native-image
@@ -122,7 +123,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{env.UPLOAD_URL}}
+          upload_url: ${{ env.UPLOAD_URL }}
           asset_path: ./atlantool
           asset_name: atlantool-${{ matrix.os }}
           asset_content_type: application/octet-stream
