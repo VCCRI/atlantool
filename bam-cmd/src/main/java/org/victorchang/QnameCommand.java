@@ -1,11 +1,8 @@
 package org.victorchang;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -44,20 +41,24 @@ public class QnameCommand {
 class CommitVersionProvider implements CommandLine.IVersionProvider {
 
     private final static String BASE_VERSION = "1.0";
-    private static final Logger LOG = LoggerFactory.getLogger(QnameCommand.class);
 
     @Override
     public String[] getVersion() {
+        String commitId = "Unknown";
+        String buildTime = "Unknown";
         Properties p = new Properties();
         try {
             final InputStream resourceAsStream = getClass().getClassLoader().getResourceAsStream("git.properties");
             p.load(resourceAsStream);
-            final String commitId = p.getProperty("git.commit.id.abbrev");
-            final String buildTime = p.getProperty("git.build.time");
-            return new String[] { "Version: " + BASE_VERSION, "Release: " + commitId, "Release Date: " + buildTime };
-        } catch (IOException e) {
-            LOG.warn("Failed to read version: ", e);
+            commitId = p.getProperty("git.commit.id.abbrev");
+            buildTime = p.getProperty("git.build.time");
+        } catch (Exception ignored) {
         }
-        return new String[] { "Version: " + BASE_VERSION };
+        return new String[] {
+                "Version: " + BASE_VERSION,
+                "Index version: " + IndexVersion.LATEST.version(),
+                "Release: " + commitId,
+                "Release Date: " + buildTime
+        };
     }
 }
