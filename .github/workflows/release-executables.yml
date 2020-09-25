@@ -72,7 +72,7 @@ jobs:
           path: 'upload_url.txt'
 
   build-linux-and-macos-images:
-    name: Build Linux and MacOS image
+    name: Build native image
     needs: [ build-jar-job ]
     strategy:
       matrix:
