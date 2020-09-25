@@ -36,22 +36,22 @@ public class KeyPointerReader {
             /**
              * reusable buffer to minimize memory allocation.
              */
-            private final byte[] inputBuff = new byte[256 + 8 + 2];
+            private final byte[] inputBuff = new byte[256];
             private KeyPointer current = null;
 
             @Override
             public boolean hasNext() {
                 if (current == null) {
                     try {
-                        int entryLen;
+                        int keyLen;
                         try {
-                            entryLen = dataInput.readShort();
+                            keyLen = dataInput.readByte();
                         } catch (EOFException ignored) {
                             return false;
                         }
-                        dataInput.readFully(inputBuff, 0, entryLen - 8);
+                        dataInput.readFully(inputBuff, 0, keyLen);
                         long pointer = dataInput.readLong();
-                        current = new KeyPointer(pointer, inputBuff, entryLen - 8);
+                        current = new KeyPointer(pointer, inputBuff, keyLen);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
