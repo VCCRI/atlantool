@@ -57,7 +57,7 @@ public class DefaultBamFileReader implements BamFileReader {
                     break;
                 }
 
-                if (coffset > bytesLimit) {
+                if (coffset >= bytesLimit) {
                     log.info("Reach {} bytes limit, skip the rest the file", bytesLimit);
                     break;
                 }

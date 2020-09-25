@@ -34,8 +34,8 @@ public class DefaultBamRecordReader implements BamRecordReader {
 
     @Override
     public void read(Path bamFile, long pointer, BamRecordHandler recordHandler) throws IOException {
-        long coffset = PointerPacker.INSTANCE.unpackCompressedOffset(pointer);
-        int uoffset = PointerPacker.INSTANCE.unpackUnCompressedOffset(pointer);
+        long coffset = BlockCompressedFilePointerUtil.getBlockAddress(pointer);
+        int uoffset = BlockCompressedFilePointerUtil.getBlockOffset(pointer);
         read(bamFile, coffset, uoffset, recordHandler);
     }
 }

@@ -21,9 +21,9 @@ public class KeyPointerReader {
 
     @SuppressWarnings("UnstableApiUsage")
     public Stream<KeyPointer> read(InputStream inputStream, int offset) {
-        InputStream concatenatedStream = new BlockCompressedInputStream(inputStream);
+        InputStream blockCompressedInputStream = new BlockCompressedInputStream(inputStream);
 
-        LittleEndianDataInputStream dataInput = new LittleEndianDataInputStream(concatenatedStream);
+        LittleEndianDataInputStream dataInput = new LittleEndianDataInputStream(blockCompressedInputStream);
         while (offset > 0) {
             try {
                 offset -= dataInput.skipBytes(offset);

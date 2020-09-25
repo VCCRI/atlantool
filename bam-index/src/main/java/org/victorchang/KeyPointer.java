@@ -1,5 +1,7 @@
 package org.victorchang;
 
+import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
+
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.StringJoiner;
@@ -14,7 +16,7 @@ public class KeyPointer implements Comparable<KeyPointer> {
     public KeyPointer(long coffset, int uoffset, byte[] key, int keyLen) {
         this.key = new byte[keyLen];
         System.arraycopy(key, 0, this.key, 0, keyLen);
-        this.pointer = PointerPacker.INSTANCE.pack(coffset, uoffset);
+        this.pointer = BlockCompressedFilePointerUtil.makeFilePointer(coffset, uoffset);
     }
 
     public KeyPointer(long pointer, byte[] key, int keyLen) {
@@ -55,8 +57,8 @@ public class KeyPointer implements Comparable<KeyPointer> {
     @Override
     public String toString() {
         return new StringJoiner(", ")
-                .add("coffset=" + PointerPacker.INSTANCE.unpackCompressedOffset(pointer))
-                .add("uoffset=" + PointerPacker.INSTANCE.unpackUnCompressedOffset(pointer))
+                .add("coffset=" + BlockCompressedFilePointerUtil.getBlockAddress(pointer))
+                .add("uoffset=" + BlockCompressedFilePointerUtil.getBlockOffset(pointer))
                 .add("key=" + Ascii7Coder.INSTANCE.decode(key, 0, key.length))
                 .toString();
     }
