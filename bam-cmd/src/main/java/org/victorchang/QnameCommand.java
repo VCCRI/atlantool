@@ -29,7 +29,8 @@ import static org.victorchang.QnameCommand.LOG;
                 ViewCommand.class
         },
         name = "atlantool",
-        description = "Search BAM file by QNAME"
+        header = "A command line tool for viewing records in a BAM file by QNAME",
+        description = "This tool provides option to create an index for a BAM file based on QNAME and then search records based on QNAME."
 )
 public class QnameCommand {
     static final Logger LOG = LoggerFactory.getLogger(QnameCommand.class);
@@ -49,26 +50,48 @@ public class QnameCommand {
     }
 }
 
-@Command(name = "index")
+@Command(name = "index",
+        header = "Create a QNAME based index for a BAM file",
+        description = "Create an index for a BAM file based on QNAME. The index can be used later to fetch records from the BAM" +
+                " file efficiently using the `view` sub command.")
 class IndexCommand implements Callable<Integer> {
     @Parameters(paramLabel = "bam-file", description = "Path to the BAM file")
-    Path bamPath;
+    private Path bamPath;
 
-    @Option(names = {"-i", "--index-path"}, description = "Directory to store index files. By default uses a directory name that starts with the BAM file name (so stored next to it)")
-    Path indexDirectory;
-    @Option(names = "--thread-count", description = "Number of threads used for sorting", defaultValue = "1")
-    int threadCount;
-    @Option(names = "--sort-buffer-size", description = "Maximum number of records per buffer used for sorting", defaultValue = "500000")
-    int sortBufferSize;
-    @Option(names = {"-l", "--limit-bytes"}, description = "Only read and index first given bytes")
-    long bytesLimit;
-    @Option(names = {"-t", "--temporary-path"}, description = "Directory to store temporary files for sorting. By default uses the index path")
-    Path tempDirectory;
-    @Option(names = {"-v", "--verbose"}, description = "Switch on verbose output", defaultValue = "false")
-    boolean verbose;
-    @Option(names = {"--force"}, description = "Overwrite existing index", defaultValue = "false")
-    boolean force;
-    @Option(names = {"--compression"}, description = "Compression level (1 to 9). 1 = faster but bigger index file size, 9 = slower but smaller index file size", defaultValue = "6")
+    @Option(names = {"-i", "--index-path"},
+            description = "Directory to store index files. By default uses a directory name that starts with the BAM file name (so stored next to it)")
+    private Path indexDirectory;
+
+    @Option(names = "--thread-count",
+            description = "Number of threads used for sorting",
+            defaultValue = "1")
+    private int threadCount;
+
+    @Option(names = "--sort-buffer-size",
+            description = "Maximum number of records per buffer used for sorting",
+            defaultValue = "500000")
+    private int sortBufferSize;
+
+    @Option(names = {"-l", "--limit-bytes"},
+            description = "Only read and index first given bytes")
+    private long bytesLimit;
+
+    @Option(names = {"-t", "--temporary-path"},
+            description = "Directory to store temporary files for sorting. By default uses the index path")
+    private Path tempDirectory;
+
+    @Option(names = {"-v", "--verbose"},
+            description = "Switch on verbose output", defaultValue = "false")
+    private boolean verbose;
+
+    @Option(names = {"--force"},
+            description = "Overwrite existing index",
+            defaultValue = "false")
+    private boolean force;
+
+    @Option(names = {"--compression"},
+            description = "Compression level (1 to 9). 1 = faster but bigger index file size, 9 = slower but smaller index file size",
+            defaultValue = "6")
     int compressionLevel;
 
     @Override
@@ -191,19 +214,32 @@ class QnameParam {
     }
 }
 
-@Command(name = "view")
+@Command(name = "view",
+         header = "View records by QNAME",
+         description = "View records with the given QNAME from a BAM file. This command needs an index to be present" +
+                 " created with the `index` sub command.")
 class ViewCommand implements Callable<Integer> {
-    @Parameters(index = "0", paramLabel = "bam-file", description = "Path to the BAM file")
+    @Parameters(index = "0",
+            paramLabel = "bam-file",
+            description = "Path to the BAM file")
     Path bamPath;
 
-    @ArgGroup(multiplicity = "1", heading = "One of qname or file containing qnames")
+    @ArgGroup(multiplicity = "1",
+              heading = "One of qname or file containing qnames")
     QnameParam qnameParam;
 
-    @Option(names = {"-i", "--index-path"}, description = "Index directory")
+    @Option(names = {"-i", "--index-path"},
+            description = "Index directory")
     Path indexDirectory;
-    @Option(names = {"-h", "--header"}, description = "Include header in SAM output", defaultValue = "false")
+
+    @Option(names = {"-h", "--header"},
+            description = "Include header in SAM output",
+            defaultValue = "false")
     boolean includeHeader;
-    @Option(names = {"-v", "--verbose"}, description = "Switch on verbose output", defaultValue = "false")
+
+    @Option(names = {"-v", "--verbose"},
+            description = "Switch on verbose output",
+            defaultValue = "false")
     boolean verbose;
 
     @Override
