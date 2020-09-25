@@ -76,9 +76,10 @@ The offset is the position of the corresponding record in the BAM file.
 ### `qname.index.bgz`
 
 This file contains a subset of QNAMEs. The pointer is an offset into
-`qname.data.bgz` for where the first record with that QNAME is stored. Because
-the file is sorted, that means records starting from that position have
-a QNAME that is equal or greater.
+`qname.data.bgz` for where the first record with that QNAME is stored.
+
+Because the file is sorted, that means records starting from that position
+have a QNAME that is equal or greater.
 
 ### Search
 
@@ -88,6 +89,11 @@ Given the above index files, a search for `input` is performed like this:
 2. Starting from the offset from 1, iterate through `qname.data.bgz` to find `QNAME == input` records.
    Stop when we hit `QNAME > input` (we won't find more records).
 3. Using the offsets from 2, look up the records in the BAM file.
+
+The number of records in the index file is calculated using the square root
+of the total number of records. That means the amount of data that needs to
+be linearly scanned for a lookup is about the same between the two levels
+of indexes.
 
 
 # Contact
