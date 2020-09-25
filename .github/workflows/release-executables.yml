@@ -98,9 +98,9 @@ jobs:
           name: 'atlantool.jar'
 
       - name: Get reflection config artifact
-          uses: actions/download-artifact@v2-preview
-          with:
-            name: 'reflect-config.json'
+        uses: actions/download-artifact@v2-preview
+        with:
+          name: 'reflect-config.json'
 
       - name: Build native image
         id: build-native-image
