@@ -9,13 +9,17 @@ on:
     branches: [ master ]
   workflow_dispatch:
 
+strategy:
+  matrix:
+    os: [ubuntu-latest, macos-latest]
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
   build:
     name: Upload release artifact
     # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -73,5 +77,5 @@ jobs:
         with:
           upload_url: ${{ steps.create-release.outputs.upload_url }}
           asset_path: ./atlantool
-          asset_name: atlantool-linux-x64
+          asset_name: atlantool-${{ matrix.os }}
           asset_content_type: application/octet-stream
