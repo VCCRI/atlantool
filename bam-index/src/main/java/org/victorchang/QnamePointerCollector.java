@@ -1,20 +1,21 @@
 package org.victorchang;
 
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.DataInput;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-public class QnamePosCollector implements BamRecordHandler {
-    private static final Logger log = LoggerFactory.getLogger(QnamePosCollector.class);
+public class QnamePointerCollector implements BamRecordHandler {
+    private static final Logger log = LoggerFactory.getLogger(QnamePointerCollector.class);
 
-    private final QnamePosFlusher flusher;
+    private final QnameParser parser;
+    private final KeyPointerBufferFlusher flusher;
 
     private final KeyPointerBufferPool bufferPool;
     private final ExecutorService executorService;
@@ -22,12 +23,13 @@ public class QnamePosCollector implements BamRecordHandler {
 
     private KeyPointerBuffer currentBuffer;
 
-    private long coffset;
-    private int uoffset;
-
-    public QnamePosCollector(KeyPointerBufferPool bufferPool, ExecutorService executorService, QnamePosFlusher flusher) {
+    public QnamePointerCollector(KeyPointerBufferPool bufferPool,
+                                 ExecutorService executorService,
+                                 QnameParser parser,
+                                 KeyPointerBufferFlusher flusher) {
         this.bufferPool = bufferPool;
         this.executorService = executorService;
+        this.parser = parser;
         this.flusher = flusher;
 
         currentBuffer = bufferPool.getBuffer();
@@ -35,29 +37,16 @@ public class QnamePosCollector implements BamRecordHandler {
     }
 
     @Override
-    public void onHeader(SAMFileHeader header) {
-    }
-
-    @Override
-    public void onAlignmentPosition(long coffset, int uoffset) {
-        this.coffset = coffset;
-        this.uoffset = uoffset;
-    }
-
-    @Override
-    public void onQname(byte[] qnameBuffer, int qnameLen) {
+    public void onAlignmentRecord(long coffset, int uoffset, DataInput dataInput, int recordLength) {
         if (currentBuffer.size() >= currentBuffer.capacity()) {
             flush();
         }
-        currentBuffer.add(new KeyPointer(coffset, uoffset, qnameBuffer, qnameLen));
-    }
-
-    @Override
-    public void onSequence(byte[] seqBuffer, int seqLen) {
-    }
-
-    @Override
-    public void onAlignmentRecord(SAMRecord record) {
+        try {
+            parser.parse(dataInput, recordLength, qname ->
+                    currentBuffer.add(new KeyPointer(coffset, uoffset, qname.qname, qname.qnameLen)));
+        } catch (IOException ioException) {
+            throw new RuntimeException(ioException);
+        }
     }
 
     private void flush() {

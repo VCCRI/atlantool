@@ -53,7 +53,7 @@ public class QnameIndexer {
         FileStore qnameStore = new DefaultFileStore(tempDir, "qname", "part");
         SortedQnameFileFactory qnameFileFactory = new SortedQnameFileFactory(qnameStore, keyPointerWriter);
 
-        QnamePosCollector collector = new QnamePosCollector(bufferPool, executorService, buffer -> {
+        QnamePointerCollector collector = new QnamePointerCollector(bufferPool, executorService, new QnameParser(), buffer -> {
             try {
                 qnameFileFactory.create(buffer);
             } catch (IOException ioException) {

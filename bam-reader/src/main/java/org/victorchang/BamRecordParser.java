@@ -1,10 +1,9 @@
 package org.victorchang;
 
-import htsjdk.samtools.SAMFileHeader;
-
 import java.io.DataInput;
 import java.io.IOException;
+import java.util.function.Consumer;
 
-public interface BamRecordParser {
-    void parse(SAMFileHeader header, DataInput dataInput, int recordLength, BamRecordHandler handler) throws IOException;
+public interface BamRecordParser<T> {
+    void parse(DataInput dataInput, int recordLength, Consumer<T> consumer) throws IOException;
 }

@@ -1,6 +1,6 @@
 package org.victorchang;
 
 @FunctionalInterface
-public interface QnamePosFlusher {
+public interface KeyPointerBufferFlusher {
     void flush(KeyPointerBuffer buffer);
 }

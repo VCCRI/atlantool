@@ -1,13 +1,12 @@
 package org.victorchang;
 
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.DataInput;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
@@ -36,31 +35,12 @@ public class QnameSearchTest {
 
     @Before
     public void setUp() {
-        BamFileReader fileReader = new DefaultBamFileReader(new EfficientBamRecordParser());
+        BamFileReader fileReader = new DefaultBamFileReader();
         indexer = new QnameIndexer(fileReader, new KeyPointerWriter(), new KeyPointerReader(), MAX_THREAD, MAX_RECORD);
 
-        BamRecordReader bamRecordReader = new DefaultBamRecordReader(new EfficientBamRecordParser());
+        BamRecordReader bamRecordReader = new DefaultBamRecordReader();
         KeyPointerReader keyPointerReader = new KeyPointerReader();
-        searcher = new QnameSearcher(keyPointerReader, bamRecordReader, new BamRecordHandler() {
-            @Override
-            public void onHeader(SAMFileHeader header) {
-            }
-
-            @Override
-            public void onAlignmentPosition(long coffset, int uoffset) {
-            }
-
-            @Override
-            public void onQname(byte[] qnameBuffer, int qnameLen) {
-            }
-
-            @Override
-            public void onSequence(byte[] seqBuffer, int seqLen) {
-            }
-
-            @Override
-            public void onAlignmentRecord(SAMRecord record) {
-            }
+        searcher = new QnameSearcher(keyPointerReader, bamRecordReader, (coffset, uoffset, dataInput, recordLength) -> {
         });
     }
 
