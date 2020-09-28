@@ -39,6 +39,6 @@ public class QnameParser implements BamRecordParser<QnameRecord> {
             throw new IllegalStateException("qname must be less than 256 bytes");
         }
         dataInput.readFully(current.qname, 0, qnameLen);
-        current.qnameLen = qnameLen - 1;
+        current.qnameLen = qnameLen - 1; // remove \x0 terminated;
     }
 }

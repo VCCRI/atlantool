@@ -9,12 +9,12 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.util.function.Consumer;
 
-public class SAMRecordParser implements BamRecordParser<SAMRecord> {
+public class SamRecordParser implements BamRecordParser<SAMRecord> {
 
     private final SAMRecordFactory samRecordFactory = new DefaultSAMRecordFactory();
     private final SAMFileHeader header;
 
-    public SAMRecordParser(SAMFileHeader header) {
+    public SamRecordParser(SAMFileHeader header) {
         this.header = header;
     }
 

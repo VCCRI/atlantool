@@ -28,10 +28,10 @@ public class SamPrintingHandlerTest {
 
         SAMFileHeader header = SamReaderFactory.make().getFileHeader(path);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        SAMRecordParser samRecordParser = new SAMRecordParser(header);
-        SAMRecordPrinter samRecordPrinter = new SAMRecordPrinter(outputStream);
+        SamRecordParser samRecordParser = new SamRecordParser(header);
+        SamRecordPrinter samRecordPrinter = new SamRecordPrinter(outputStream);
 
-        fileReader.read(path, new SAMRecordGenerator(samRecordParser, samRecordPrinter::print));
+        fileReader.read(path, new SamRecordGenerator(samRecordParser, samRecordPrinter::print));
         samRecordPrinter.finish();
 
         assertThat(new String(outputStream.toByteArray()), equalTo(
@@ -45,10 +45,10 @@ public class SamPrintingHandlerTest {
 
         SAMFileHeader samFileHeader = SamReaderFactory.make().getFileHeader(path);
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        SAMRecordParser samRecordParser = new SAMRecordParser(samFileHeader);
-        SAMRecordPrinter samRecordPrinter = new SAMRecordPrinter(outputStream, true);
+        SamRecordParser samRecordParser = new SamRecordParser(samFileHeader);
+        SamRecordPrinter samRecordPrinter = new SamRecordPrinter(outputStream, true);
 
-        fileReader.read(path, new SAMRecordGenerator(samRecordParser, samRecordPrinter::print));
+        fileReader.read(path, new SamRecordGenerator(samRecordParser, samRecordPrinter::print));
         samRecordPrinter.finish();
 
         assertThat(new String(outputStream.toByteArray()), equalTo(

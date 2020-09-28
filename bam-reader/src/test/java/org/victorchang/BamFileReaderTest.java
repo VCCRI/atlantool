@@ -27,7 +27,7 @@ public class BamFileReaderTest {
         BamFileReader fileReader = new DefaultBamFileReader();
 
         SAMFileHeader header = SamReaderFactory.make().getFileHeader(path);
-        LastRecordSelector<SAMRecord> handler = new LastRecordSelector<>(new SAMRecordParser(header));
+        LastRecordSelector<SAMRecord> handler = new LastRecordSelector<>(new SamRecordParser(header));
         fileReader.read(path, handler);
 
         assertThat(handler.getLast().getReadString(), equalTo("CCCCAACCCTAACCCTAACCCTAACCCTAACCTAAC"));

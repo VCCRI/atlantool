@@ -79,8 +79,8 @@ class ViewCommand implements Callable<Integer> {
         SAMFileHeader fileHeader = SamReaderFactory.make().getFileHeader(bamPath);
         BamRecordReader recordReader = new DefaultBamRecordReader();
         KeyPointerReader keyReader = new KeyPointerReader();
-        SAMRecordPrinter recordPrinter = new SAMRecordPrinter(System.out, includeHeader);
-        SAMRecordGenerator recordHandler = new SAMRecordGenerator(new SAMRecordParser(fileHeader), recordPrinter::print);
+        SamRecordPrinter recordPrinter = new SamRecordPrinter(System.out, includeHeader);
+        SamRecordGenerator recordHandler = new SamRecordGenerator(new SamRecordParser(fileHeader), recordPrinter::print);
         QnameSearcher searcher = new QnameSearcher(keyReader, recordReader, recordHandler);
 
         final Set<String> qnames;
