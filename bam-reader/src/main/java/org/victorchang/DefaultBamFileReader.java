@@ -1,8 +1,6 @@
 package org.victorchang;
 
 import com.google.common.io.LittleEndianDataInputStream;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.cram.io.CountingInputStream;
 import htsjdk.samtools.util.BlockCompressedFilePointerUtil;
 import htsjdk.samtools.util.BlockCompressedInputStream;
@@ -20,12 +18,6 @@ public class DefaultBamFileReader implements BamFileReader {
     private static final int FILE_BUFF_SIZE = 8192;
     private static final byte[] MAGIC = {'B', 'A', 'M', 1};
 
-    private final BamRecordParser recordParser;
-
-    public DefaultBamFileReader(BamRecordParser recordParser) {
-        this.recordParser = recordParser;
-    }
-
     @Override
     public long read(Path bamFile, BamRecordHandler handler) throws IOException {
         return read(bamFile, handler, Long.MAX_VALUE);
@@ -34,8 +26,6 @@ public class DefaultBamFileReader implements BamFileReader {
     @SuppressWarnings("UnstableApiUsage")
     @Override
     public long read(Path bamFile, BamRecordHandler handler, long bytesLimit) throws IOException {
-        final SAMFileHeader header = readSamHeader(bamFile);
-        handler.onHeader(header);
         long recordCount = 0;
         try (BlockCompressedInputStream blockCompressedInputStream = new BlockCompressedInputStream(bamFile.toFile())) {
 
@@ -62,10 +52,8 @@ public class DefaultBamFileReader implements BamFileReader {
                     break;
                 }
 
-                handler.onAlignmentPosition(coffset, uoffset);
-
                 long start = countingInputStream.getCount();
-                recordParser.parse(header, dataInput, recordLength, handler);
+                handler.onAlignmentRecord(coffset, uoffset, dataInput, recordLength);
                 long end = countingInputStream.getCount();
 
                 int remaining = recordLength - ((int) (end - start));
@@ -78,9 +66,7 @@ public class DefaultBamFileReader implements BamFileReader {
         return recordCount;
     }
 
-    private SAMFileHeader readSamHeader(Path bamFile) throws IOException {
-        return SamReaderFactory.make().getFileHeader(bamFile);
-    }
+
 
     private void assertMagic(DataInput dataInput) throws IOException {
         byte[] buffer = new byte[4];

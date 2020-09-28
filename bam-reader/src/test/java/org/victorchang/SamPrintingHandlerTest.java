@@ -1,5 +1,8 @@
 package org.victorchang;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SamReaderFactory;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -11,18 +14,25 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 
 public class SamPrintingHandlerTest {
+    BamFileReader fileReader;
+
+    @Before
+    public void setUp() throws Exception {
+        fileReader = new DefaultBamFileReader();
+    }
 
     @Test
     public void testSamOutputWithoutHeader() throws Exception {
         URL example1 = ClassLoader.getSystemResource("bam/single-record");
         Path path = Paths.get(example1.toURI());
 
-        BamFileReader fileReader = new DefaultBamFileReader(new SamtoolsBasedParser());
+        SAMFileHeader header = SamReaderFactory.make().getFileHeader(path);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        SamRecordParser samRecordParser = new SamRecordParser(header);
+        SamRecordPrinter samRecordPrinter = new SamRecordPrinter(outputStream);
 
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        SamPrintingHandler handler = new SamPrintingHandler(outputStream, false);
-        fileReader.read(path, handler);
-        handler.finish();
+        fileReader.read(path, new SamRecordGenerator(samRecordParser, samRecordPrinter::print));
+        samRecordPrinter.finish();
 
         assertThat(new String(outputStream.toByteArray()), equalTo(
                 "SOLEXA-1GA-1_0047_FC62472:5:81:15648:19537#0\t16\tchr1\t10148\t25\t36M\t*\t0\t0\tCCCCAACCCTAACCCTAACCCTAACCCTAACCTAAC\tB8='35:@;+30;B@+CAFFFGGEGGGGGGGGEGGG\tX1:i:1\tMD:Z:32C3\tNM:i:1\n"));
@@ -33,12 +43,13 @@ public class SamPrintingHandlerTest {
         URL example1 = ClassLoader.getSystemResource("bam/single-record");
         Path path = Paths.get(example1.toURI());
 
-        BamFileReader fileReader = new DefaultBamFileReader(new SamtoolsBasedParser());
+        SAMFileHeader samFileHeader = SamReaderFactory.make().getFileHeader(path);
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        SamRecordParser samRecordParser = new SamRecordParser(samFileHeader);
+        SamRecordPrinter samRecordPrinter = new SamRecordPrinter(outputStream, true);
 
-        final ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        SamPrintingHandler handler = new SamPrintingHandler(outputStream, true);
-        fileReader.read(path, handler);
-        handler.finish();
+        fileReader.read(path, new SamRecordGenerator(samRecordParser, samRecordPrinter::print));
+        samRecordPrinter.finish();
 
         assertThat(new String(outputStream.toByteArray()), equalTo(
                 "@HD\tVN:1.6\n" +

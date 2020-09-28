@@ -27,18 +27,18 @@ public class QnameSearcher {
 
     private final KeyPointerReader keyPointerReader;
     private final BamRecordReader recordReader;
-    private final BamRecordHandler handler;
+    private final BamRecordHandler recordHandler;
 
-    public QnameSearcher(KeyPointerReader keyPointerReader, BamRecordReader recordReader, BamRecordHandler handler) {
+    public QnameSearcher(KeyPointerReader keyPointerReader, BamRecordReader recordReader, BamRecordHandler recordHandler) {
         this.keyPointerReader = keyPointerReader;
         this.recordReader = recordReader;
-        this.handler = handler;
+        this.recordHandler = recordHandler;
     }
 
     public int search(Path bamFile, Path indexFolder, Set<String> qnames) throws IOException {
         final List<Long> pointersForQname = getPointersForQname(indexFolder, qnames);
         for (Long pointer : pointersForQname) {
-            recordReader.read(bamFile, pointer, handler);
+            recordReader.read(bamFile, pointer, recordHandler);
         }
         return pointersForQname.size();
     }

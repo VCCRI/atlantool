@@ -1,28 +1,24 @@
 package org.victorchang;
 
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMHeaderRecordComparator;
-
 import java.io.DataInput;
 import java.io.IOException;
+import java.util.function.Consumer;
 
-public class EfficientBamRecordParser implements BamRecordParser {
+public class QnameSeqParser implements BamRecordParser<QnameSeqRecord> {
     private static final int QNAME_SIZE = 256;
-    private static final int SEQ_SIZE = 128;
+    private static final int SEQ_SIZE = 256;
 
     /**
-     * reusable buffers to minimize memory allocation.
+     * reuse mutable object to minimize memory allocation.
      */
-    private final byte[] qnameBuffer;
-    private byte[] seqBuffer;
+    private final QnameSeqRecord current;
 
-    public EfficientBamRecordParser() {
-        qnameBuffer = new byte[QNAME_SIZE];
-        seqBuffer = new byte[SEQ_SIZE];
+    public QnameSeqParser() {
+        current = new QnameSeqRecord(QNAME_SIZE, (SEQ_SIZE + 1) / 2);
     }
 
     @Override
-    public void parse(SAMFileHeader header, DataInput dataInput, int recordLength, BamRecordHandler handler) throws IOException {
+    public void parse(DataInput dataInput, int recordLength, Consumer<QnameSeqRecord> consumer) throws IOException {
         dataInput.readInt(); // reference seq id
         dataInput.readInt(); // pos
         int qnameLen = dataInput.readUnsignedByte();
@@ -36,7 +32,6 @@ public class EfficientBamRecordParser implements BamRecordParser {
         dataInput.readInt(); // template len
 
         readQname(dataInput, qnameLen);
-        handler.onQname(qnameBuffer, qnameLen - 1); // subtract 1 for terminated \x0
 
         int cigarLen = 4 * cigarCount; // skip cigar
         while (cigarLen > 0) {
@@ -44,22 +39,25 @@ public class EfficientBamRecordParser implements BamRecordParser {
         }
 
         readSeq(dataInput, seqLen);
-        handler.onSequence(seqBuffer, seqLen);
+
+        consumer.accept(current);
     }
 
     private void readQname(DataInput dataInput, int qnameLen) throws IOException {
         if (qnameLen >= 256) {
             throw new IllegalStateException("qname must be less than 256 bytes");
         }
-        dataInput.readFully(qnameBuffer, 0, qnameLen);
+        dataInput.readFully(current.qname, 0, qnameLen);
+        current.qnameLen = qnameLen - 1; // remove \x0 terminated;
     }
 
     private void readSeq(DataInput dataInput, int seqLength) throws IOException {
         int byteLen = (seqLength + 1) / 2;
         // we can't make any assumption on sequence length so grow the buffer if it is required.
-        while (byteLen > seqBuffer.length) {
-            seqBuffer = new byte[Math.max(seqBuffer.length * 2, byteLen)];
+        while (byteLen > current.seq.length) {
+            current.seq = new byte[Math.max(current.seq.length * 2, byteLen)];
         }
-        dataInput.readFully(seqBuffer, 0, byteLen);
+        dataInput.readFully(current.seq, 0, byteLen);
+        current.seqLen = seqLength;
     }
 }

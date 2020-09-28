@@ -1,20 +1,10 @@
 package org.victorchang;
 
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
+import java.io.DataInput;
 
 /**
- * Callbacks that are invoked by {@link BamFileReader}.
+ * Callbacks that are invoked by {@link BamFileReader} and {@link BamRecordReader}.
  */
 public interface BamRecordHandler {
-
-    void onHeader(SAMFileHeader header);
-
-    void onAlignmentPosition(long coffset, int uoffset);
-
-    void onQname(byte[] qnameBuffer, int qnameLen);
-
-    void onSequence(byte[] seqBuffer, int seqLen);
-
-    void onAlignmentRecord(SAMRecord record);
+    void onAlignmentRecord(long coffset, int uoffset, DataInput dataInput, int recordLength);
 }

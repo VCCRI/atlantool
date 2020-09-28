@@ -1,6 +1,8 @@
 package org.victorchang;
 
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SamReaderFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,10 +76,12 @@ class ViewCommand implements Callable<Integer> {
 
         long start = System.nanoTime();
 
-        BamRecordReader bamRecordReader = new DefaultBamRecordReader(new SamtoolsBasedParser());
-        KeyPointerReader qnamePosReader = new KeyPointerReader();
-        SamPrintingHandler handler = new SamPrintingHandler(System.out, includeHeader);
-        QnameSearcher searcher = new QnameSearcher(qnamePosReader, bamRecordReader, handler);
+        SAMFileHeader fileHeader = SamReaderFactory.make().getFileHeader(bamPath);
+        BamRecordReader recordReader = new DefaultBamRecordReader();
+        KeyPointerReader keyReader = new KeyPointerReader();
+        SamRecordPrinter recordPrinter = new SamRecordPrinter(System.out, includeHeader);
+        SamRecordGenerator recordHandler = new SamRecordGenerator(new SamRecordParser(fileHeader), recordPrinter::print);
+        QnameSearcher searcher = new QnameSearcher(keyReader, recordReader, recordHandler);
 
         final Set<String> qnames;
         try {
@@ -87,7 +91,7 @@ class ViewCommand implements Callable<Integer> {
             return -1;
         }
         searcher.search(bamPath, indexDirectory, qnames);
-        handler.finish();
+        recordPrinter.finish();
 
         long finish = System.nanoTime();
 

@@ -7,13 +7,18 @@ import htsjdk.samtools.SAMRecordFactory;
 
 import java.io.DataInput;
 import java.io.IOException;
+import java.util.function.Consumer;
 
-public class SamtoolsBasedParser implements BamRecordParser {
+public class SamRecordParser implements BamRecordParser<SAMRecord> {
 
     private final SAMRecordFactory samRecordFactory = new DefaultSAMRecordFactory();
+    private final SAMFileHeader header;
 
-    @Override
-    public void parse(SAMFileHeader header, DataInput dataInput, int recordLength, BamRecordHandler handler) throws IOException {
+    public SamRecordParser(SAMFileHeader header) {
+        this.header = header;
+    }
+
+    public void parse(DataInput dataInput, int recordLength, Consumer<SAMRecord> consumer) throws IOException {
         final int referenceSeqId = dataInput.readInt();// reference seq id
         final int pos = dataInput.readInt();// pos
         final int qnameLen = dataInput.readUnsignedByte();
@@ -43,9 +48,6 @@ public class SamtoolsBasedParser implements BamRecordParser {
                 templateLen,
                 restOfData);
 
-        handler.onQname(samRecord.getReadName().getBytes(), qnameLen - 1); // subtract 1 for \x0 terminated
-        handler.onSequence(samRecord.getReadBases(), seqLen);
-        handler.onAlignmentRecord(samRecord);
+        consumer.accept(samRecord);
     }
-
 }

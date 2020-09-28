@@ -2,6 +2,7 @@ package org.victorchang;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamReaderFactory;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,13 +24,14 @@ public class BamFileReaderTest {
         URL example1 = ClassLoader.getSystemResource("bam/single-record");
         Path path = Paths.get(example1.toURI());
 
-        BamFileReader fileReader = new DefaultBamFileReader(new SamtoolsBasedParser());
+        BamFileReader fileReader = new DefaultBamFileReader();
 
-        AlignmentRecordingHandler handler = new AlignmentRecordingHandler();
+        SAMFileHeader header = SamReaderFactory.make().getFileHeader(path);
+        LastRecordSelector<SAMRecord> handler = new LastRecordSelector<>(new SamRecordParser(header));
         fileReader.read(path, handler);
 
-        assertThat(handler.getRecord().getReadString(), equalTo("CCCCAACCCTAACCCTAACCCTAACCCTAACCTAAC"));
-        assertThat(handler.getRecord().getReadName(), equalTo("SOLEXA-1GA-1_0047_FC62472:5:81:15648:19537#0"));
+        assertThat(handler.getLast().getReadString(), equalTo("CCCCAACCCTAACCCTAACCCTAACCCTAACCTAAC"));
+        assertThat(handler.getLast().getReadName(), equalTo("SOLEXA-1GA-1_0047_FC62472:5:81:15648:19537#0"));
     }
 
     @Test
@@ -37,13 +39,14 @@ public class BamFileReaderTest {
         URL example1 = ClassLoader.getSystemResource("bam/example1");
         Path path = Paths.get(example1.toURI());
 
-        BamFileReader fileReader = new DefaultBamFileReader(new EfficientBamRecordParser());
+        BamFileReader fileReader = new DefaultBamFileReader();
 
-        TestHandler handler = new TestHandler();
+        RecordCounter handler = new RecordCounter();
         long start = System.nanoTime();
         fileReader.read(path, handler);
         long finish = System.nanoTime();
 
+        assertThat(handler.getRecordCount(), equalTo(918571L));
         log.info(String.format("#records %d, duration %d ms", handler.getRecordCount(),  (finish - start) / 1000_000));
     }
 
@@ -52,13 +55,14 @@ public class BamFileReaderTest {
         URL example2 = ClassLoader.getSystemResource("bam/example2");
         Path path = Paths.get(example2.toURI());
 
-        BamFileReader fileReader = new DefaultBamFileReader(new EfficientBamRecordParser());
+        BamFileReader fileReader = new DefaultBamFileReader();
 
-        TestHandler handler = new TestHandler();
+        RecordCounter handler = new RecordCounter();
         long start = System.nanoTime();
         fileReader.read(path, handler);
         long finish = System.nanoTime();
 
+        assertThat(handler.getRecordCount(), equalTo(999234L));
         log.info(String.format("#records %d, duration %d ms", handler.getRecordCount(),  (finish - start) / 1000_000));
     }
 
@@ -67,87 +71,15 @@ public class BamFileReaderTest {
         URL example3 = ClassLoader.getSystemResource("bam/example3");
         Path path = Paths.get(example3.toURI());
 
-        BamFileReader fileReader = new DefaultBamFileReader(new EfficientBamRecordParser());
+        BamFileReader fileReader = new DefaultBamFileReader();
 
-        TestHandler handler = new TestHandler();
+        RecordCounter handler = new RecordCounter();
         long start = System.nanoTime();
         fileReader.read(path, handler);
         long finish = System.nanoTime();
 
+        assertThat(handler.getRecordCount(), equalTo(1215970L));
         log.info(String.format("#records %d, duration %d ms", handler.getRecordCount(),  (finish - start) / 1000_000));
     }
 
-    private static class TestHandler implements BamRecordHandler {
-        private long recordCount;
-        private long coffset;
-        private int uoffset;
-
-        private String qname;
-
-        public TestHandler() {
-            recordCount = 0;
-        }
-
-        public long getRecordCount() {
-            return recordCount;
-        }
-
-        @Override
-        public void onHeader(SAMFileHeader header) {
-        }
-
-        @Override
-        public void onAlignmentPosition(long coffset, int uoffset) {
-            this.coffset = coffset;
-            this.uoffset = uoffset;
-            recordCount++;
-        }
-
-        @Override
-        public void onQname(byte[] qnameBuffer, int qnameLen) {
-            qname = Ascii7Coder.INSTANCE.decode(qnameBuffer, 0, qnameLen);
-        }
-
-        @Override
-        public void onSequence(byte[] seqBuffer, int seqLen) {
-            String seq = SeqDecoder.INSTANCE.decode(seqBuffer, 0, seqLen);
-            if (recordCount <= 5) {
-                log.debug(String.format("coffset %d, uoffset %d, qname %s, seq %s", coffset, uoffset, qname, seq));
-            }
-        }
-
-        @Override
-        public void onAlignmentRecord(SAMRecord record) {
-        }
-    }
-
-    private static class AlignmentRecordingHandler implements BamRecordHandler {
-
-        private SAMRecord record;
-
-        @Override
-        public void onHeader(SAMFileHeader header) {
-        }
-
-        @Override
-        public void onAlignmentPosition(long coffset, int uoffset) {
-        }
-
-        @Override
-        public void onQname(byte[] qnameBuffer, int qnameLen) {
-        }
-
-        @Override
-        public void onSequence(byte[] seqBuffer, int seqLen) {
-        }
-
-        @Override
-        public void onAlignmentRecord(SAMRecord record) {
-            this.record = record;
-        }
-
-        public SAMRecord getRecord() {
-            return record;
-        }
-    }
 }

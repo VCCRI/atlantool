@@ -1,12 +1,13 @@
 package org.victorchang;
 
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
+import org.junit.Before;
 import org.junit.Test;
 
+import java.io.DataInput;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -14,18 +15,23 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
 public class BamRecordReaderTest {
+    private BamRecordReader recordReader;
+    private QnameSeqRecordGenerator recordFetcher;
+
+    @Before
+    public void setUp() throws Exception {
+        recordReader = new DefaultBamRecordReader();
+        recordFetcher = new QnameSeqRecordGenerator(new QnameSeqParser());
+    }
+
     @Test
     public void testReadSample1() throws IOException, URISyntaxException {
         URL example1 = ClassLoader.getSystemResource("bam/example1");
         Path path = Paths.get(example1.toURI());
 
-        BamRecordReader recordReader = new DefaultBamRecordReader(new EfficientBamRecordParser());
-
-        RecordFetcher handler = new RecordFetcher();
-        recordReader.read(path, 36300895, 59353, handler);
-
-        assertThat(handler.getQname(), equalTo("SOLEXA-1GA-1_4_FC20ENL:7:76:613:540"));
-        assertThat(handler.getSeq(), equalTo("TTAATATATGAATGGATTAATTCATTC"));
+        recordReader.read(path, 36300895, 59353, recordFetcher);
+        assertThat(recordFetcher.getQname(), equalTo("SOLEXA-1GA-1_4_FC20ENL:7:76:613:540"));
+        assertThat(recordFetcher.getSeq(), equalTo("TTAATATATGAATGGATTAATTCATTC"));
     }
 
     @Test
@@ -33,13 +39,12 @@ public class BamRecordReaderTest {
         URL example1 = ClassLoader.getSystemResource("bam/example2");
         Path path = Paths.get(example1.toURI());
 
-        BamRecordReader recordReader = new DefaultBamRecordReader(new EfficientBamRecordParser());
+        BamRecordReader recordReader = new DefaultBamRecordReader();
 
-        RecordFetcher handler = new RecordFetcher();
-        recordReader.read(path, 28645829, 12964, handler);
+        recordReader.read(path, 28645829, 12964, recordFetcher);
 
-        assertThat(handler.getQname(), equalTo("SOLEXA-1GA-1_6_FC20ET7:6:291:877:537"));
-        assertThat(handler.getSeq(), equalTo("TGTTGAGTGCTATAGTGGTTTGGGAGG"));
+        assertThat(recordFetcher.getQname(), equalTo("SOLEXA-1GA-1_6_FC20ET7:6:291:877:537"));
+        assertThat(recordFetcher.getSeq(), equalTo("TGTTGAGTGCTATAGTGGTTTGGGAGG"));
     }
 
     @Test
@@ -47,47 +52,37 @@ public class BamRecordReaderTest {
         URL example1 = ClassLoader.getSystemResource("bam/example3");
         Path path = Paths.get(example1.toURI());
 
-        BamRecordReader recordReader = new DefaultBamRecordReader(new EfficientBamRecordParser());
-
-        RecordFetcher handler = new RecordFetcher();
-        recordReader.read(path, 0, 64974, handler);
-
-        assertThat(handler.getQname(), equalTo("SOLEXA-1GA-1_6_FC20ET7:7:22:94:703"));
-        assertThat(handler.getSeq(), equalTo("TGCCCTCTGACTGTGCTCAGGGGGCTC"));
+        recordReader.read(path, 0, 64974, recordFetcher);
+        assertThat(recordFetcher.getQname(), equalTo("SOLEXA-1GA-1_6_FC20ET7:7:22:94:703"));
+        assertThat(recordFetcher.getSeq(), equalTo("TGCCCTCTGACTGTGCTCAGGGGGCTC"));
     }
 
-    private static class RecordFetcher implements BamRecordHandler {
-        private String qname;
-        private String seq;
+    private static class QnameSeqRecordGenerator implements BamRecordHandler {
+        private final QnameSeqParser parser;
 
-        @Override
-        public void onHeader(SAMFileHeader header) {
-        }
+        private QnameSeqRecord record;
 
-        @Override
-        public void onAlignmentPosition(long coffset, int uoffset) {
-        }
-
-        @Override
-        public void onQname(byte[] qnameBuffer, int qnameLen) {
-            this.qname = Ascii7Coder.INSTANCE.decode(qnameBuffer, 0, qnameLen);
-        }
-
-        @Override
-        public void onSequence(byte[] seqBuffer, int seqLen) {
-            this.seq = SeqDecoder.INSTANCE.decode(seqBuffer, 0, seqLen);
+        private QnameSeqRecordGenerator(QnameSeqParser parser) {
+            this.parser = parser;
         }
 
         public String getQname() {
-            return qname;
+            return new String(record.qname, 0, record.qnameLen, StandardCharsets.US_ASCII);
         }
 
         public String getSeq() {
-            return seq;
+            return SeqDecoder.INSTANCE.decode(record.seq, 0, record.seqLen);
         }
 
         @Override
-        public void onAlignmentRecord(SAMRecord record) {
+        public void onAlignmentRecord(long coffset, int uoffset, DataInput dataInput, int recordLength) {
+            try {
+                parser.parse(dataInput, recordLength, x -> {
+                    this.record = x;
+                });
+            } catch (IOException ioException) {
+                throw new RuntimeException(ioException);
+            }
         }
     }
 }
